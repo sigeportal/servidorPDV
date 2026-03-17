@@ -1,0 +1,3992 @@
+{
+  "swagger":"2.0",
+  "info":
+  {
+    "description":"API Horse para o Sistema de PDV Lanchoentes",
+    "version":"1.0.0",
+    "title":"Servidor PDV Lanchonetes",
+    "termsOfService":"http://www.apache.org/licenses/LICENSE-2.0.txt",
+    "contact":
+    {
+      "name":"Portal.com",
+      "email":"portalsoft.com@gmail.com",
+      "url":"http://www.portalsoft.net.br"
+    }
+,
+    "license":
+    {
+      "name":"Apache License - Version 2.0, January 2004",
+      "url":"http://www.apache.org/licenses/LICENSE-2.0"
+    }
+  }
+,
+  "basePath":"/v1",
+  "schemes":
+  [
+      ]
+,
+  "consumes":
+  [
+    "application/json"
+  ]
+,
+  "produces":
+  [
+    "application/json"
+  ]
+,
+  "paths":
+  {
+    "/clientes/{id}":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "Clientes"
+        ]
+,
+        "summary":"Obtem um(a) Clientes",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"id",
+            "description":"Id do(a) Clientes para buscar",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Operação bem Sucedida",
+            "schema":
+            {
+              "$ref":"#/definitions/Clientes"
+            }
+          }
+,
+          "404":
+          {
+            "description":"Clientes não encontrado(a)"
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "delete":
+      {
+        "tags":
+        [
+          "Clientes"
+        ]
+,
+        "summary":"Apagar um(a) Clientes",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"id",
+            "description":"id do(a) Clientes para deletar",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "404":
+          {
+            "description":"Clientes não encontrado(a)"
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/clientes":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "Clientes"
+        ]
+,
+        "summary":"Lista Todos(as)",
+        "description":"Lista todos(as) os(as) Clientess",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                  ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Operação bem Sucedida",
+            "schema":
+            {
+              "type":"array",
+              "items":
+              {
+                "$ref":"#/definitions/Clientes"
+              }
+            }
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "post":
+      {
+        "tags":
+        [
+          "Clientes"
+        ]
+,
+        "summary":"Criar Clientes",
+        "description":"Cria um(a) novo(a) Clientes",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"body",
+            "name":"Dados do(a) Clientes",
+            "description":"Clientes",
+            "required":true,
+            "schema":
+            {
+              "$ref":"#/definitions/Clientes"
+            }
+          }
+        ]
+,
+        "responses":
+        {
+          "201":
+          {
+            "description":"Created",
+            "schema":
+            {
+              "$ref":"#/definitions/Clientes"
+            }
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "put":
+      {
+        "tags":
+        [
+          "Clientes"
+        ]
+,
+        "summary":"Atualiza Clientes",
+        "description":"Atualiza os dados de um(a) Clientes",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"body",
+            "name":"Dados do(a) Clientes",
+            "description":"Clientes",
+            "required":true,
+            "schema":
+            {
+              "$ref":"#/definitions/Clientes"
+            }
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Ok",
+            "schema":
+            {
+              "$ref":"#/definitions/Clientes"
+            }
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/controle_senhas":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "Controle Senhas"
+        ]
+,
+        "summary":"Obtem a senha",
+        "description":"Obtem a senha",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                  ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Operação bem Sucedida",
+            "schema":
+            {
+              "$ref":"#/definitions/ControleSenhas"
+            }
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "post":
+      {
+        "tags":
+        [
+          "Controle Senhas"
+        ]
+,
+        "summary":"Reseta a senha",
+        "description":"Zera a senha",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                  ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Ok",
+            "schema":
+            {
+              "type":"Senha resetada com sucesso!"
+            }
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "put":
+      {
+        "tags":
+        [
+          "Controle Senhas"
+        ]
+,
+        "summary":"Reseta a senha",
+        "description":"Zera a senha",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                  ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Ok",
+            "schema":
+            {
+              "type":"Senha resetada com sucesso!"
+            }
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/empresa":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "Empresa"
+        ]
+,
+        "summary":"Lista Todos(as)",
+        "description":"Lista todos(as) os(as) Empresas",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                  ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Operação bem Sucedida",
+            "schema":
+            {
+              "type":"array",
+              "items":
+              {
+                "$ref":"#/definitions/Empresa"
+              }
+            }
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "post":
+      {
+        "tags":
+        [
+          "Empresa"
+        ]
+,
+        "summary":"Criar Empresa",
+        "description":"Cria um(a) novo(a) Empresa",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"body",
+            "name":"Dados do(a) Empresa",
+            "description":"Empresa",
+            "required":true,
+            "schema":
+            {
+              "$ref":"#/definitions/Empresa"
+            }
+          }
+        ]
+,
+        "responses":
+        {
+          "201":
+          {
+            "description":"Created",
+            "schema":
+            {
+              "$ref":"#/definitions/Empresa"
+            }
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "put":
+      {
+        "tags":
+        [
+          "Empresa"
+        ]
+,
+        "summary":"Atualiza Empresa",
+        "description":"Atualiza os dados de um(a) Empresa",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"body",
+            "name":"Dados do(a) Empresa",
+            "description":"Empresa",
+            "required":true,
+            "schema":
+            {
+              "$ref":"#/definitions/Empresa"
+            }
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Ok",
+            "schema":
+            {
+              "$ref":"#/definitions/Empresa"
+            }
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/empresa/{id}":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "Empresa"
+        ]
+,
+        "summary":"Obtem um(a) Empresa",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"id",
+            "description":"Id do(a) Empresa para buscar",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Operação bem Sucedida",
+            "schema":
+            {
+              "$ref":"#/definitions/Empresa"
+            }
+          }
+,
+          "404":
+          {
+            "description":"Empresa não encontrado(a)"
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "delete":
+      {
+        "tags":
+        [
+          "Empresa"
+        ]
+,
+        "summary":"Apagar um(a) Empresa",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"id",
+            "description":"id do(a) Empresa para deletar",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "404":
+          {
+            "description":"Empresa não encontrado(a)"
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/login":
+    {
+      "post":
+      {
+        "tags":
+        [
+          "Login"
+        ]
+,
+        "summary":"Login na aplicação",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"body",
+            "name":"Dados Login",
+            "description":"Dados para acessar o sistema",
+            "required":true,
+            "schema":
+            {
+              "$ref":"#/definitions/LoginModel"
+            }
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Operação bem Sucedida",
+            "schema":
+            {
+              "$ref":"#/definitions/LoginResponse"
+            }
+          }
+,
+          "401":
+          {
+            "description":"não autorizado"
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/vendas":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "Vendas"
+        ]
+,
+        "summary":"Lista Todos(as)",
+        "description":"Lista todos(as) os(as) Vendass",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                  ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Operação bem Sucedida",
+            "schema":
+            {
+              "type":"array",
+              "items":
+              {
+                "$ref":"#/definitions/VendasResponse"
+              }
+            }
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "post":
+      {
+        "tags":
+        [
+          "Vendas"
+        ]
+,
+        "summary":"Criar Vendas",
+        "description":"Cria um(a) novo(a) Vendas",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"body",
+            "name":"Dados do(a) Vendas",
+            "description":"Vendas",
+            "required":true,
+            "schema":
+            {
+              "$ref":"#/definitions/VendasResponse"
+            }
+          }
+        ]
+,
+        "responses":
+        {
+          "201":
+          {
+            "description":"Created",
+            "schema":
+            {
+              "$ref":"#/definitions/VendasResponse"
+            }
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "put":
+      {
+        "tags":
+        [
+          "Vendas"
+        ]
+,
+        "summary":"Atualiza Vendas",
+        "description":"Atualiza os dados de um(a) Vendas",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"body",
+            "name":"Dados do(a) Vendas",
+            "description":"Vendas",
+            "required":true,
+            "schema":
+            {
+              "$ref":"#/definitions/VendasResponse"
+            }
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Ok",
+            "schema":
+            {
+              "$ref":"#/definitions/VendasResponse"
+            }
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/vendas/{id}":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "Vendas"
+        ]
+,
+        "summary":"Obtem um(a) Vendas",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"id",
+            "description":"Id do(a) Vendas para buscar",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Operação bem Sucedida",
+            "schema":
+            {
+              "$ref":"#/definitions/Vendas"
+            }
+          }
+,
+          "404":
+          {
+            "description":"Vendas não encontrado(a)"
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "delete":
+      {
+        "tags":
+        [
+          "Vendas"
+        ]
+,
+        "summary":"Apagar um(a) Vendas",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"id",
+            "description":"id do(a) Vendas para deletar",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "404":
+          {
+            "description":"Vendas não encontrado(a)"
+          }
+,
+          "400":
+          {
+            "description":"BadRequest",
+            "schema":
+            {
+              "$ref":"#/definitions/APIError"
+            }
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/comandas":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "comandas"
+        ]
+,
+        "summary":"Lista Comandas",
+        "description":"Lista todas as comandas ativas",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                  ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Operação bem sucedida"
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "post":
+      {
+        "tags":
+        [
+          "comandas"
+        ]
+,
+        "summary":"Cria/Atualiza Comanda",
+        "description":"Cria uma nova comanda ou atualiza existente",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"body",
+            "name":"Dados da Comanda",
+            "description":"Comanda",
+            "required":true,
+            "schema":
+            {
+              "$ref":"#/definitions/ModelComanda"
+            }
+          }
+        ]
+,
+        "responses":
+        {
+          "201":
+          {
+            "description":"Created",
+            "schema":
+            {
+              "$ref":"#/definitions/ModelComanda"
+            }
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/comandas/{codigo}/encerrar":
+    {
+      "put":
+      {
+        "tags":
+        [
+          "comandas"
+        ]
+,
+        "summary":"Encerrar Comanda",
+        "description":"Marca a comanda como encerrada e atualiza estado da mesa",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo da mesa/comanda",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Ok"
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/comandas/item/{codigo}":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "comandas"
+        ]
+,
+        "summary":"Obtem item com_pro",
+        "description":"Retorna item da comanda",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo do item",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Ok"
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/comandas/{codigo}/itens":
+    {
+      "delete":
+      {
+        "tags":
+        [
+          "comandas"
+        ]
+,
+        "summary":"Remove item da comanda",
+        "description":"Remove item por codigo",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo do item",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Ok"
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/comandas/{codigo}":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "comandas"
+        ]
+,
+        "summary":"Obtem Comanda por codigo",
+        "description":"Retorna os dados de uma comanda por codigo",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo da comanda",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Ok"
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "put":
+      {
+        "tags":
+        [
+          "comandas"
+        ]
+,
+        "summary":"Atualizar Comanda",
+        "description":"Atualiza itens/complementos da comanda",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo da mesa",
+            "required":true,
+            "type":"integer"
+          }
+,
+          
+          {
+            "in":"body",
+            "name":"Dados da Comanda",
+            "description":"Comanda",
+            "required":true,
+            "schema":
+            {
+              "type":"object"
+            }
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Ok"
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/comandas/{codigo}/complementos":
+    {
+      "delete":
+      {
+        "tags":
+        [
+          "comandas"
+        ]
+,
+        "summary":"Remove complementos",
+        "description":"Remove complementos de um item",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo do com_pro",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Ok"
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/complementos":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "complementos"
+        ]
+,
+        "summary":"Lista Adicionais por Subgrupo",
+        "description":"Retorna os adicionais associados a um subgrupo",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"subgrupo",
+            "description":"Codigo do subgrupo",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Operação bem sucedida",
+            "schema":
+            {
+              "type":"array",
+              "items":
+              {
+                "$ref":"#/definitions/ModelComplemento"
+              }
+            }
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/mesas/{codigo}":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "mesas"
+        ]
+,
+        "summary":"Obtem Mesa por codigo",
+        "description":"Retorna os dados de uma mesa por codigo",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo da mesa",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Operação bem sucedida"
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "put":
+      {
+        "tags":
+        [
+          "mesas"
+        ]
+,
+        "summary":"Atualiza dados da mesa",
+        "description":"Atualiza campos da mesa via JSON no body",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo da mesa",
+            "required":true,
+            "type":"integer"
+          }
+,
+          
+          {
+            "in":"body",
+            "name":"Dados da Mesa",
+            "description":"Mesa",
+            "required":false,
+            "schema":
+            {
+              "$ref":"#/definitions/MesaSchema"
+            }
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Ok"
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/mesas":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "mesas"
+        ]
+,
+        "summary":"Lista Mesas",
+        "description":"Lista todas as mesas",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                  ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Operação bem sucedida"
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "post":
+      {
+        "tags":
+        [
+          "mesas"
+        ]
+,
+        "summary":"Atualiza status da mesa",
+        "description":"Atualiza o status da mesa via parametros de path",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo da mesa",
+            "required":true,
+            "type":"integer"
+          }
+,
+          
+          {
+            "in":"path",
+            "name":"status",
+            "description":"Novo status da mesa",
+            "required":true,
+            "type":"string"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Ok"
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+,
+    "/produtos":
+    {
+      "get":
+      {
+        "tags":
+        [
+          "produtos"
+        ]
+,
+        "summary":"Lista Produtos",
+        "description":"Lista produtos por filtros",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                  ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"Operação bem sucedida",
+            "schema":
+            {
+              "type":"array",
+              "items":
+              {
+                "$ref":"#/definitions/Produtos"
+              }
+            }
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "get":
+      {
+        "tags":
+        [
+          "produtos"
+        ]
+,
+        "summary":"Obtem Produto por codigo",
+        "description":"Retorna produto por codigo",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo do produto",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"OK"
+          }
+,
+          "400":
+          {
+            "description":"Bad Request"
+          }
+,
+          "500":
+          {
+            "description":"Internal Server Error"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "get":
+      {
+        "tags":
+        [
+          "produtos"
+        ]
+,
+        "summary":"Obtem niveis do produto",
+        "description":"Retorna grades/niveis do produto",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo do produto",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"OK"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "get":
+      {
+        "tags":
+        [
+          "produtos"
+        ]
+,
+        "summary":"Categorias",
+        "description":"Lista categorias",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                  ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"OK"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "get":
+      {
+        "tags":
+        [
+          "produtos"
+        ]
+,
+        "summary":"Foto da categoria",
+        "description":"Retorna foto da categoria",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo da categoria",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"OK"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "get":
+      {
+        "tags":
+        [
+          "produtos"
+        ]
+,
+        "summary":"Foto do produto",
+        "description":"Retorna foto do produto",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo do produto",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"OK"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "get":
+      {
+        "tags":
+        [
+          "produtos"
+        ]
+,
+        "summary":"Grades do produto",
+        "description":"Retorna grades do produto",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo do produto",
+            "required":true,
+            "type":"integer"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"OK"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+,
+      "get":
+      {
+        "tags":
+        [
+          "produtos"
+        ]
+,
+        "summary":"Grade por tamanho",
+        "description":"Retorna grade do produto por tamanho",
+        "consumes":
+        [
+          "application/json"
+        ]
+,
+        "produces":
+        [
+          "application/json"
+        ]
+,
+        "parameters":
+        [
+                    {
+            "in":"path",
+            "name":"codigo",
+            "description":"Codigo do produto",
+            "required":true,
+            "type":"integer"
+          }
+,
+          
+          {
+            "in":"path",
+            "name":"tamanho",
+            "description":"Sigla do tamanho",
+            "required":true,
+            "type":"string"
+          }
+        ]
+,
+        "responses":
+        {
+          "200":
+          {
+            "description":"OK"
+          }
+        }
+,
+        "security":
+        [
+                  ]
+      }
+    }
+  }
+,
+  "definitions":
+  {
+    "APIError":
+    {
+      "type":"object",
+      "description":"APIError",
+      "properties":
+      {
+        "error":
+        {
+          "type":"string"
+        }
+      }
+    }
+,
+    "Clientes":
+    {
+      "type":"object",
+      "description":"Clientes",
+      "properties":
+      {
+        "Codigo":
+        {
+          "type":"integer"
+        }
+,
+        "Nome":
+        {
+          "type":"string"
+        }
+,
+        "Endereco":
+        {
+          "type":"string"
+        }
+,
+        "Bairro":
+        {
+          "type":"string"
+        }
+,
+        "Cidade":
+        {
+          "type":"string"
+        }
+,
+        "Cep":
+        {
+          "type":"string"
+        }
+,
+        "Uf":
+        {
+          "type":"string"
+        }
+,
+        "Fone":
+        {
+          "type":"string"
+        }
+,
+        "Email":
+        {
+          "type":"string"
+        }
+,
+        "Datac":
+        {
+          "type":"string",
+          "format":"date-time"
+        }
+,
+        "Datau":
+        {
+          "type":"string",
+          "format":"date-time"
+        }
+,
+        "Tipo":
+        {
+          "type":"string"
+        }
+,
+        "Celular":
+        {
+          "type":"string"
+        }
+,
+        "Endcorresp":
+        {
+          "type":"string"
+        }
+,
+        "Obs":
+        {
+          "type":"string"
+        }
+,
+        "Cnpj_cpf":
+        {
+          "type":"string"
+        }
+,
+        "Situacao":
+        {
+          "type":"string"
+        }
+,
+        "Plano":
+        {
+          "type":"integer"
+        }
+,
+        "Limite":
+        {
+          "type":"number"
+        }
+,
+        "Datanasc":
+        {
+          "type":"string",
+          "format":"date"
+        }
+,
+        "Rg":
+        {
+          "type":"string"
+        }
+,
+        "Pai":
+        {
+          "type":"string"
+        }
+,
+        "Mae":
+        {
+          "type":"string"
+        }
+,
+        "Fidelidade":
+        {
+          "type":"string"
+        }
+,
+        "Desconto":
+        {
+          "type":"number"
+        }
+,
+        "Conjuge":
+        {
+          "type":"string"
+        }
+,
+        "Inadimplencia":
+        {
+          "type":"integer"
+        }
+,
+        "Insc_estadual":
+        {
+          "type":"string"
+        }
+,
+        "Insc_municipal":
+        {
+          "type":"string"
+        }
+,
+        "Cod_pais":
+        {
+          "type":"integer"
+        }
+,
+        "Suframa":
+        {
+          "type":"string"
+        }
+,
+        "Numero":
+        {
+          "type":"string"
+        }
+,
+        "Complemento":
+        {
+          "type":"string"
+        }
+,
+        "Classificacao":
+        {
+          "type":"number"
+        }
+,
+        "Nota":
+        {
+          "type":"string"
+        }
+,
+        "Classificacao2":
+        {
+          "type":"number"
+        }
+,
+        "Descontar":
+        {
+          "type":"string"
+        }
+,
+        "Cadastro":
+        {
+          "type":"string"
+        }
+,
+        "Data_u_a":
+        {
+          "type":"string",
+          "format":"date"
+        }
+,
+        "Bairroc":
+        {
+          "type":"string"
+        }
+,
+        "Cidadec":
+        {
+          "type":"string"
+        }
+,
+        "Limite_tit":
+        {
+          "type":"number"
+        }
+,
+        "Tipo_entr":
+        {
+          "type":"integer"
+        }
+,
+        "Abc":
+        {
+          "type":"string"
+        }
+,
+        "Ordena_abc":
+        {
+          "type":"integer"
+        }
+,
+        "Vencimento":
+        {
+          "type":"string",
+          "format":"date"
+        }
+,
+        "Cid":
+        {
+          "type":"integer"
+        }
+,
+        "Razao_social":
+        {
+          "type":"string"
+        }
+,
+        "Indic_ie":
+        {
+          "type":"string"
+        }
+,
+        "Pmr":
+        {
+          "type":"integer"
+        }
+      }
+    }
+,
+    "ControleSenhas":
+    {
+      "type":"object",
+      "description":"ControleSenhas",
+      "properties":
+      {
+        "Senha":
+        {
+          "type":"string"
+        }
+      }
+    }
+,
+    "Empresa":
+    {
+      "type":"object",
+      "description":"Empresa",
+      "properties":
+      {
+        "Codigo":
+        {
+          "type":"integer"
+        }
+,
+        "CNPJ":
+        {
+          "type":"string"
+        }
+,
+        "InscricaoEstadual":
+        {
+          "type":"string"
+        }
+,
+        "RazaoSocial":
+        {
+          "type":"string"
+        }
+,
+        "Municipio":
+        {
+          "type":"string"
+        }
+,
+        "UF":
+        {
+          "type":"string"
+        }
+,
+        "Fone":
+        {
+          "type":"string"
+        }
+,
+        "FAX":
+        {
+          "type":"string"
+        }
+,
+        "Logradouro":
+        {
+          "type":"string"
+        }
+,
+        "Numero":
+        {
+          "type":"string"
+        }
+,
+        "Complemento":
+        {
+          "type":"string"
+        }
+,
+        "Bairro":
+        {
+          "type":"string"
+        }
+,
+        "CEP":
+        {
+          "type":"string"
+        }
+,
+        "Contato":
+        {
+          "type":"string"
+        }
+,
+        "CodMunIBGE":
+        {
+          "type":"string"
+        }
+,
+        "CodUFIBGE":
+        {
+          "type":"string"
+        }
+,
+        "Fantasia":
+        {
+          "type":"string"
+        }
+,
+        "CRT":
+        {
+          "type":"string"
+        }
+,
+        "SUFRAMA":
+        {
+          "type":"string"
+        }
+,
+        "Perfil":
+        {
+          "type":"string"
+        }
+,
+        "Atividade":
+        {
+          "type":"string"
+        }
+,
+        "Email":
+        {
+          "type":"string"
+        }
+,
+        "LicencaDLLNFe":
+        {
+          "type":"string"
+        }
+,
+        "Titulo1":
+        {
+          "type":"string"
+        }
+,
+        "Titulo2":
+        {
+          "type":"string"
+        }
+,
+        "Titulo3":
+        {
+          "type":"string"
+        }
+,
+        "InscricaoMunicipal":
+        {
+          "type":"string"
+        }
+,
+        "Licenca":
+        {
+          "type":"string"
+        }
+,
+        "RNTRC":
+        {
+          "type":"string"
+        }
+,
+        "LicencaDLLMDFe":
+        {
+          "type":"string"
+        }
+,
+        "ID_CSC":
+        {
+          "type":"string"
+        }
+,
+        "CSC":
+        {
+          "type":"string"
+        }
+,
+        "TipoAtividade":
+        {
+          "type":"string"
+        }
+,
+        "IndicadorDaNaturezaPessoaJuridica":
+        {
+          "type":"string"
+        }
+,
+        "Logo":
+        {
+          "type":"string"
+        }
+,
+        "CodCNAE":
+        {
+          "type":"string"
+        }
+      }
+    }
+,
+    "LoginModel":
+    {
+      "type":"object",
+      "description":"LoginModel",
+      "properties":
+      {
+        "login":
+        {
+          "type":"string"
+        }
+,
+        "senha":
+        {
+          "type":"string"
+        }
+      }
+    }
+,
+    "LoginResponse":
+    {
+      "type":"object",
+      "description":"LoginResponse",
+      "properties":
+      {
+        "Codigo":
+        {
+          "type":"integer"
+        }
+,
+        "Login":
+        {
+          "type":"string"
+        }
+,
+        "fun_codigo":
+        {
+          "type":"integer"
+        }
+,
+        "fun_nome":
+        {
+          "type":"string"
+        }
+      }
+    }
+,
+    "MesaSchema":
+    {
+      "type":"object",
+      "description":"MesaSchema",
+      "properties":
+      {
+        "codigo":
+        {
+          "type":"integer"
+        }
+,
+        "nome":
+        {
+          "type":"string"
+        }
+,
+        "estado":
+        {
+          "type":"string"
+        }
+,
+        "valor":
+        {
+          "type":"number"
+        }
+      }
+    }
+,
+    "ModelComanda":
+    {
+      "type":"object",
+      "description":"ModelComanda",
+      "properties":
+      {
+        "Mesa":
+        {
+          "type":"integer"
+        }
+,
+        "Valor":
+        {
+          "type":"number"
+        }
+,
+        "Itens":
+        {
+          "type":"array",
+          "items":
+          {
+            "type":"TModelItens"
+          }
+        }
+      }
+    }
+,
+    "ModelComplemento":
+    {
+      "type":"object",
+      "description":"ModelComplemento",
+      "properties":
+      {
+        "codigo":
+        {
+          "type":"integer"
+        }
+,
+        "quantidade":
+        {
+          "type":"number"
+        }
+      }
+    }
+,
+    "PF_Parcela":
+    {
+      "type":"object",
+      "description":"PF_Parcela",
+      "properties":
+      {
+        "Codigo":
+        {
+          "type":"integer"
+        }
+,
+        "PF":
+        {
+          "type":"integer"
+        }
+,
+        "TP":
+        {
+          "type":"integer"
+        }
+,
+        "Valor":
+        {
+          "type":"number"
+        }
+,
+        "Vencimento":
+        {
+          "type":"string",
+          "format":"date-time"
+        }
+,
+        "Juros":
+        {
+          "type":"number"
+        }
+,
+        "Descontos":
+        {
+          "type":"number"
+        }
+,
+        "Duplicata":
+        {
+          "type":"string"
+        }
+,
+        "Valorpg":
+        {
+          "type":"number"
+        }
+,
+        "Estado":
+        {
+          "type":"integer"
+        }
+,
+        "TipoPagamento":
+        {
+          "allOf":
+          [
+                        {
+              "$ref":"#/definitions/TipoPgm"
+            }
+          ]
+        }
+      }
+    }
+,
+    "PedFat":
+    {
+      "type":"object",
+      "description":"PedFat",
+      "properties":
+      {
+        "Codigo":
+        {
+          "type":"integer"
+        }
+,
+        "Data":
+        {
+          "type":"string",
+          "format":"date-time"
+        }
+,
+        "Tabela":
+        {
+          "type":"string"
+        }
+,
+        "Cod_Ped":
+        {
+          "type":"integer"
+        }
+,
+        "Campo_Fat":
+        {
+          "type":"string"
+        }
+,
+        "Campo_Ped":
+        {
+          "type":"string"
+        }
+,
+        "Cliente":
+        {
+          "type":"string"
+        }
+,
+        "Valor":
+        {
+          "type":"number"
+        }
+,
+        "ValorPG":
+        {
+          "type":"number"
+        }
+,
+        "Cod_Cli":
+        {
+          "type":"integer"
+        }
+,
+        "FUN":
+        {
+          "type":"integer"
+        }
+,
+        "Parcelas":
+        {
+          "type":"integer"
+        }
+,
+        "FAT":
+        {
+          "type":"integer"
+        }
+,
+        "ValorB":
+        {
+          "type":"number"
+        }
+,
+        "Desconto":
+        {
+          "type":"number"
+        }
+,
+        "DataC":
+        {
+          "type":"string",
+          "format":"date-time"
+        }
+,
+        "Campo_DataC":
+        {
+          "type":"string"
+        }
+,
+        "Tipo":
+        {
+          "type":"integer"
+        }
+,
+        "Ficha":
+        {
+          "type":"integer"
+        }
+,
+        "PFParcelas":
+        {
+          "type":"array",
+          "items":
+          {
+            "type":"TPF_Parcela"
+          }
+        }
+      }
+    }
+,
+    "PedFatResponse":
+    {
+      "type":"object",
+      "description":"PedFatResponse",
+      "properties":
+      {
+        "Codigo":
+        {
+          "type":"integer"
+        }
+,
+        "Data":
+        {
+          "type":"string",
+          "format":"date"
+        }
+,
+        "Tabela":
+        {
+          "type":"string"
+        }
+,
+        "Cod_Ped":
+        {
+          "type":"integer"
+        }
+,
+        "Campo_Fat":
+        {
+          "type":"string"
+        }
+,
+        "Campo_Ped":
+        {
+          "type":"string"
+        }
+,
+        "Cliente":
+        {
+          "type":"string"
+        }
+,
+        "Valor":
+        {
+          "type":"number"
+        }
+,
+        "ValorPG":
+        {
+          "type":"number"
+        }
+,
+        "Cod_Cli":
+        {
+          "type":"integer"
+        }
+,
+        "FUN":
+        {
+          "type":"integer"
+        }
+,
+        "Parcelas":
+        {
+          "type":"integer"
+        }
+,
+        "FAT":
+        {
+          "type":"integer"
+        }
+,
+        "ValorB":
+        {
+          "type":"number"
+        }
+,
+        "Desconto":
+        {
+          "type":"number"
+        }
+,
+        "DataC":
+        {
+          "type":"string",
+          "format":"date"
+        }
+,
+        "Campo_DataC":
+        {
+          "type":"string"
+        }
+,
+        "Tipo":
+        {
+          "type":"integer"
+        }
+,
+        "Ficha":
+        {
+          "type":"integer"
+        }
+,
+        "PFParcelas":
+        {
+          "type":"array",
+          "items":
+          {
+            "$ref":"#/definitions/PF_Parcela"
+          }
+        }
+      }
+    }
+,
+    "Produtos":
+    {
+      "type":"object",
+      "description":"Produtos",
+      "properties":
+      {
+        "Codigo":
+        {
+          "type":"integer"
+        }
+,
+        "Est":
+        {
+          "type":"integer"
+        }
+,
+        "CodFor":
+        {
+          "type":"integer"
+        }
+,
+        "Fabricante":
+        {
+          "type":"string"
+        }
+,
+        "Quantidadem":
+        {
+          "type":"integer"
+        }
+,
+        "Quantidade":
+        {
+          "type":"number"
+        }
+,
+        "Valorv":
+        {
+          "type":"number"
+        }
+,
+        "Valorcm":
+        {
+          "type":"number"
+        }
+,
+        "Valorc":
+        {
+          "type":"number"
+        }
+,
+        "Valorl":
+        {
+          "type":"number"
+        }
+,
+        "Valorf":
+        {
+          "type":"number"
+        }
+,
+        "Quantidadef":
+        {
+          "type":"number"
+        }
+,
+        "Local":
+        {
+          "type":"string"
+        }
+,
+        "Embalagem":
+        {
+          "type":"string"
+        }
+,
+        "Datauc":
+        {
+          "type":"string",
+          "format":"date"
+        }
+,
+        "Gru":
+        {
+          "type":"integer"
+        }
+,
+        "Descricao":
+        {
+          "type":"string"
+        }
+,
+        "Dataua":
+        {
+          "type":"string",
+          "format":"date"
+        }
+,
+        "Abc":
+        {
+          "type":"string"
+        }
+,
+        "Codbarra":
+        {
+          "type":"string"
+        }
+,
+        "Valors":
+        {
+          "type":"number"
+        }
+,
+        "CodTotalizador":
+        {
+          "type":"integer"
+        }
+,
+        "Nome":
+        {
+          "type":"string"
+        }
+,
+        "Estado":
+        {
+          "type":"string"
+        }
+,
+        "Gtin":
+        {
+          "type":"string"
+        }
+,
+        "Iat":
+        {
+          "type":"string"
+        }
+,
+        "Ippt":
+        {
+          "type":"string"
+        }
+,
+        "Sit_trib":
+        {
+          "type":"string"
+        }
+,
+        "Aliqicms_opint":
+        {
+          "type":"integer"
+        }
+,
+        "Perc_red_opint":
+        {
+          "type":"number"
+        }
+,
+        "Um":
+        {
+          "type":"integer"
+        }
+,
+        "Cst":
+        {
+          "type":"string"
+        }
+,
+        "Genero":
+        {
+          "type":"integer"
+        }
+,
+        "Tt":
+        {
+          "type":"integer"
+        }
+,
+        "Ncm":
+        {
+          "type":"string"
+        }
+,
+        "Cfop":
+        {
+          "type":"string"
+        }
+,
+        "Estoque":
+        {
+          "type":"string"
+        }
+,
+        "Caminho":
+        {
+          "type":"string"
+        }
+,
+        "Tipo":
+        {
+          "type":"string"
+        }
+,
+        "Cest":
+        {
+          "type":"string"
+        }
+,
+        "Fcp":
+        {
+          "type":"string"
+        }
+,
+        "Excecao_ncm":
+        {
+          "type":"integer"
+        }
+,
+        "Tipo_item":
+        {
+          "type":"string"
+        }
+,
+        "Balanca":
+        {
+          "type":"string"
+        }
+,
+        "Dias_validade":
+        {
+          "type":"integer"
+        }
+,
+        "Valorv_prazo":
+        {
+          "type":"number"
+        }
+,
+        "Validade":
+        {
+          "type":"string"
+        }
+,
+        "Texto_semente_tratada":
+        {
+          "type":"string"
+        }
+,
+        "Caminho_imagem":
+        {
+          "type":"string"
+        }
+,
+        "Como_eh_vendido":
+        {
+          "type":"string"
+        }
+,
+        "Totalizador":
+        {
+          "allOf":
+          [
+                        {
+              "$ref":"#/definitions/Totalizador"
+            }
+          ]
+        }
+      }
+    }
+,
+    "TipoPgm":
+    {
+      "type":"object",
+      "description":"TipoPgm",
+      "properties":
+      {
+        "Codigo":
+        {
+          "type":"integer"
+        }
+,
+        "Descricao":
+        {
+          "type":"string"
+        }
+,
+        "Conta":
+        {
+          "type":"integer"
+        }
+,
+        "Tipo":
+        {
+          "type":"string"
+        }
+,
+        "Nome":
+        {
+          "type":"string"
+        }
+,
+        "Titulo":
+        {
+          "type":"string"
+        }
+,
+        "Condicao":
+        {
+          "type":"string"
+        }
+,
+        "Analisar":
+        {
+          "type":"string"
+        }
+,
+        "Dias_prazo_rec":
+        {
+          "type":"integer"
+        }
+,
+        "Tx_operacao":
+        {
+          "type":"number"
+        }
+,
+        "Tx_antecipacao":
+        {
+          "type":"number"
+        }
+,
+        "Sub_des":
+        {
+          "type":"integer"
+        }
+,
+        "Ordenacao":
+        {
+          "type":"integer"
+        }
+      }
+    }
+,
+    "Totalizador":
+    {
+      "type":"object",
+      "description":"Totalizador",
+      "properties":
+      {
+        "Codigo":
+        {
+          "type":"integer"
+        }
+,
+        "Totalizador":
+        {
+          "type":"string"
+        }
+,
+        "Sit_Trib":
+        {
+          "type":"string"
+        }
+,
+        "CST_ICMS":
+        {
+          "type":"string"
+        }
+,
+        "Aliq_ICMS":
+        {
+          "type":"number"
+        }
+,
+        "CST_PIS":
+        {
+          "type":"string"
+        }
+,
+        "Aliq_PIS":
+        {
+          "type":"number"
+        }
+,
+        "CST_COFINS":
+        {
+          "type":"string"
+        }
+,
+        "Aliq_COFINS":
+        {
+          "type":"number"
+        }
+      }
+    }
+,
+    "VenEst":
+    {
+      "type":"object",
+      "description":"VenEst",
+      "properties":
+      {
+        "Codigo":
+        {
+          "type":"integer"
+        }
+,
+        "Valor":
+        {
+          "type":"number"
+        }
+,
+        "Quantidade":
+        {
+          "type":"number"
+        }
+,
+        "Ven":
+        {
+          "type":"integer"
+        }
+,
+        "Pro":
+        {
+          "type":"integer"
+        }
+,
+        "Lucro":
+        {
+          "type":"number"
+        }
+,
+        "Valorr":
+        {
+          "type":"number"
+        }
+,
+        "Valorl":
+        {
+          "type":"number"
+        }
+,
+        "Valorf":
+        {
+          "type":"number"
+        }
+,
+        "Diferenca":
+        {
+          "type":"number"
+        }
+,
+        "Liquido":
+        {
+          "type":"integer"
+        }
+,
+        "Valor2":
+        {
+          "type":"number"
+        }
+,
+        "Valorcm":
+        {
+          "type":"number"
+        }
+,
+        "Aliquota":
+        {
+          "type":"number"
+        }
+,
+        "Gtin":
+        {
+          "type":"string"
+        }
+,
+        "Embalagem":
+        {
+          "type":"string"
+        }
+,
+        "Valorb":
+        {
+          "type":"number"
+        }
+,
+        "Desconto":
+        {
+          "type":"number"
+        }
+,
+        "Valorc":
+        {
+          "type":"number"
+        }
+,
+        "Obs":
+        {
+          "type":"string"
+        }
+,
+        "Gra":
+        {
+          "type":"integer"
+        }
+,
+        "Semente_tratada":
+        {
+          "type":"string"
+        }
+,
+        "Valor_partida":
+        {
+          "type":"number"
+        }
+,
+        "Variacao":
+        {
+          "type":"number"
+        }
+,
+        "Usu":
+        {
+          "type":"integer"
+        }
+,
+        "Complementos":
+        {
+          "type":"array",
+          "items":
+          {
+            "type":"TVeAdicionais"
+          }
+        }
+,
+        "OpcoesNivel":
+        {
+          "type":"array",
+          "items":
+          {
+            "type":"TVeOpcoes"
+          }
+        }
+      }
+    }
+,
+    "Vendas":
+    {
+      "type":"object",
+      "description":"Vendas",
+      "properties":
+      {
+        "Codigo":
+        {
+          "type":"integer"
+        }
+,
+        "Data":
+        {
+          "type":"string",
+          "format":"date-time"
+        }
+,
+        "Valor":
+        {
+          "type":"number"
+        }
+,
+        "Hora":
+        {
+          "type":"string",
+          "format":"time"
+        }
+,
+        "Fun":
+        {
+          "type":"integer"
+        }
+,
+        "Nf":
+        {
+          "type":"integer"
+        }
+,
+        "Diferenca":
+        {
+          "type":"number"
+        }
+,
+        "Datac":
+        {
+          "type":"string",
+          "format":"date"
+        }
+,
+        "Fat":
+        {
+          "type":"integer"
+        }
+,
+        "Dav":
+        {
+          "type":"integer"
+        }
+,
+        "Cli":
+        {
+          "type":"integer"
+        }
+,
+        "Devolucao_p":
+        {
+          "type":"string"
+        }
+,
+        "Tipo_pedido":
+        {
+          "type":"string"
+        }
+,
+        "Taxa_entrega":
+        {
+          "type":"number"
+        }
+,
+        "Forma_pgto":
+        {
+          "type":"integer"
+        }
+,
+        "Nome_cliente":
+        {
+          "type":"string"
+        }
+,
+        "Id_pedido":
+        {
+          "type":"string"
+        }
+,
+        "Itens":
+        {
+          "type":"array",
+          "items":
+          {
+            "type":"TVenEst"
+          }
+        }
+,
+        "PedFat":
+        {
+          "allOf":
+          [
+                        {
+              "$ref":"#/definitions/PedFat"
+            }
+          ]
+        }
+      }
+    }
+,
+    "VendasResponse":
+    {
+      "type":"object",
+      "description":"VendasResponse",
+      "properties":
+      {
+        "Codigo":
+        {
+          "type":"integer"
+        }
+,
+        "Data":
+        {
+          "type":"string",
+          "format":"date"
+        }
+,
+        "Valor":
+        {
+          "type":"number"
+        }
+,
+        "Hora":
+        {
+          "type":"string",
+          "format":"time"
+        }
+,
+        "Fun":
+        {
+          "type":"integer"
+        }
+,
+        "Nf":
+        {
+          "type":"integer"
+        }
+,
+        "Diferenca":
+        {
+          "type":"number"
+        }
+,
+        "Datac":
+        {
+          "type":"string",
+          "format":"date"
+        }
+,
+        "Fat":
+        {
+          "type":"integer"
+        }
+,
+        "Dav":
+        {
+          "type":"integer"
+        }
+,
+        "Cli":
+        {
+          "type":"integer"
+        }
+,
+        "Devolucao_p":
+        {
+          "type":"string"
+        }
+,
+        "Tipo_pedido":
+        {
+          "type":"string"
+        }
+,
+        "Taxa_entrega":
+        {
+          "type":"number"
+        }
+,
+        "Forma_pgto":
+        {
+          "type":"integer"
+        }
+,
+        "Nome_cliente":
+        {
+          "type":"string"
+        }
+,
+        "Id_pedido":
+        {
+          "type":"string"
+        }
+,
+        "Itens":
+        {
+          "type":"array",
+          "items":
+          {
+            "$ref":"#/definitions/VenEst"
+          }
+        }
+,
+        "PedFat":
+        {
+          "allOf":
+          [
+                        {
+              "$ref":"#/definitions/PedFatResponse"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@ unit UnitComanda.Model;
 
 interface
 
-uses UnitComplemento.Model;
+uses UnitComplemento.Model, System.Generics.Collections;
 
 type
   TModelItens = class
@@ -17,6 +17,7 @@ type
     FComplementos: TArray<TModelComplemento>;
     Fusuario: integer;
     FIdAgrupamento: string;
+    FOpcoesNiveis: TArray<TModelOpcoesNiveis>;
   public
     property Produto: integer read FProduto write FProduto;
     property Valor: Currency read FValor write FValor;
@@ -26,7 +27,8 @@ type
     property Grade: integer read FGrade write FGrade;
     property nome: string read Fnome write Fnome;
     property usuario: integer read Fusuario write Fusuario;
-    property Complementos: TArray<TModelComplemento> read FComplementos write FComplementos;
+    property Complementos: TArray<TModelComplemento> read FComplementos write FComplementos; 
+    property OpcoesNiveis: TArray<TModelOpcoesNiveis> read FOpcoesNiveis write FOpcoesNiveis; 
     property IdAgrupamento: string read FIdAgrupamento write FIdAgrupamento;
   end;
 

@@ -23,7 +23,8 @@ type
     class procedure Get(Req: THorseRequest; Res: THorseResponse; Next: TProc);
     class procedure GetPorCodigo(Req: THorseRequest; Res: THorseResponse; Next: TProc);
     class procedure Post(Req: THorseRequest; Res: THorseResponse; Next: TProc);
-    class procedure EncerrarComanda(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+    class procedure EncerrarComanda(Req: THorseRequest; Res: THorseResponse);
+    class procedure AtualizarEstado(Req: THorseRequest; Res: THorseResponse; Next: TProc);
     class procedure AtualizarComanda(Req: THorseRequest; Res: THorseResponse; Next: TProc);
     class procedure DeletarItemComanda(Req: THorseRequest; Res: THorseResponse; Next: TProc);
     class procedure DeletarComplementos(Req: THorseRequest; Res: THorseResponse; Next: TProc);
@@ -34,7 +35,7 @@ implementation
 
 { TComandasController }
 
-uses UnitConstants, UnitDatabase;
+uses UnitConstants, UnitDatabase, UnitCpAdicionais.Model, UnitCpOpcoes.Model;
 
 class procedure TComandasController.AtualizarComanda(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 var
@@ -49,6 +50,9 @@ var
   Complementos: TArray<TModelComplemento>;
   c: integer;
   TotalComplementos: Currency;
+  Opcoes: TArray<TModelOpcoesNiveis>;
+  o: Integer;
+  TotalOpcoesNiveis: Currency;
 begin
   if Req.Params.Count = 0 then
     raise Exception.Create('Paramentro "Codigo" não informado!');
@@ -93,6 +97,18 @@ begin
         Query.AddParam('QUANTIDADE', Complementos[c].Quantidade);
         Query.ExecSQL;
       end;
+      Opcoes := Comanda.Itens[i].OpcoesNiveis;
+      for o        := Low(Opcoes) to High(Opcoes) do
+      begin
+        Query.Clear;
+        Query.Add('INSERT INTO CP_OPCOES (CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, CO_VALOR)');
+        Query.Add('VALUES (GEN_ID(GEN_CP_OPCOES, 1), :CP, :NI, :QUANTIDADE, :VALOR);');
+        Query.AddParam('CP', CodigoComPro);
+        Query.AddParam('NI', Opcoes[o].codNivel);
+        Query.AddParam('QUANTIDADE', Opcoes[o].Quantidade);
+        Query.AddParam('VALOR', Opcoes[o].ValorAdicional);
+        Query.ExecSQL;
+      end;
     end;
   end;
   Query.Clear;
@@ -105,11 +121,20 @@ begin
   Query.Open();
   TotalComanda      := Query.DataSet.FieldByName('TOTAL').AsCurrency;
   TotalComplementos := Query.DataSet.FieldByName('COMPLEMENTOS').AsCurrency;
+  // soma opcoes niveis
+  Query.Clear;
+  Query.Add('SELECT SUM(CO_VALOR * CO_QUANTIDADE) OPCOES');
+  Query.Add('FROM COM_PRO JOIN COMANDAS ON CP_COM = COM_CODIGO');
+  Query.Add('LEFT JOIN CP_OPCOES ON CO_CP = CP_CODIGO');
+  Query.Add('WHERE COM_CODIGO = :CODIGO AND CP_ESTADO <> ''E''');
+  Query.AddParam('CODIGO', CodigoComanda);
+  Query.Open();
+  TotalOpcoesNiveis := Query.DataSet.FieldByName('OPCOES').AsCurrency;
   // Atualiza comandas
   Query.Clear;
   Query.Add('UPDATE COMANDAS SET COM_VALOR = :VALOR WHERE COM_CODIGO = :CODIGO');
   Query.AddParam('CODIGO', CodigoComanda);
-  Query.AddParam('VALOR', TotalComanda + TotalComplementos);
+  Query.AddParam('VALOR', TotalComanda + TotalComplementos + TotalOpcoesNiveis);
   Query.ExecSQL;
   // Atualiza o estado da mesa
   Query.Clear;
@@ -247,18 +272,52 @@ begin
     Res.Send<TJSONObject>(TJSONObject.Create().AddPair('error', 'Codigo da com_pro não informado')).Status(THTTPStatus.BadRequest);
 end;
 
-class procedure TComandasController.EncerrarComanda(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+class procedure TComandasController.EncerrarComanda(Req: THorseRequest; Res: THorseResponse);
+var
+  Query: iQuery;
+  CodMesa: Integer;
+  CodigoComanda: Integer;
+begin
+	CodMesa := Req.Params.Items['codigo'].ToInteger();
+	Query := TDatabase.Query;
+	// Tratamento para atualizar estado da mesa faturada, mudando para estado 'A' de Aberto
+  Query.Clear;
+  Query.Add('UPDATE MESAS SET MES_ESTADO = :ESTADO WHERE MES_CODIGO = :MESA');
+  Query.AddParam('ESTADO', 'A');
+  Query.AddParam('MESA', CodMesa);
+  Query.ExecSQL;
+  //busco o cod da comanda
+  Query  := TDatabase.Query;
+  Query.Clear;
+  Query.Add('SELECT COM_CODIGO FROM COMANDAS WHERE COM_CODIGO = (SELECT MAX(COM_CODIGO) FROM COMANDAS WHERE COM_DATA_FECHAMENTO IS NULL AND COM_MESA = :MESA)');
+  Query.AddParam('MESA', CodMesa);
+  Query.Open;
+  CodigoComanda := Query.DataSet.FieldByName('COM_CODIGO').AsInteger;
+  // Preenchendo a data de fechamento da comanda
+  Query.Clear;
+  Query.Add('UPDATE COMANDAS SET COM_DATA_FECHAMENTO = :DATA_FECHAMENTO, COM_HORA_FECHAMENTO = :HORA_FECHAMENTO WHERE COM_CODIGO = :CODIGO');
+  Query.AddParam('DATA_FECHAMENTO', Date);
+  Query.AddParam('HORA_FECHAMENTO', Now);
+  Query.AddParam('CODIGO', CodigoComanda);
+  Query.ExecSQL;
+  Res.Send<TJSONObject>(TJSONObject.Create.AddPair('message', 'Comanda encerrada com sucesso!')).Status(THTTPStatus.OK);
+end;
+
+class procedure TComandasController.AtualizarEstado(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 var
   Query: iQuery;
   Codigo: integer;
+  Status: string;
 begin
   if Req.Params.Count > 0 then
   begin
     Codigo := Req.Params.Items['codigo'].ToInteger();
+    Status := Req.Params.Items['status'];
     Query  := TDatabase.Query;
     Query.Clear;
-    Query.Add('UPDATE MESAS SET MES_ESTADO = ''F'' WHERE MES_CODIGO = :CODIGO');
+    Query.Add('UPDATE MESAS SET MES_ESTADO = :STATUS WHERE MES_CODIGO = :CODIGO');
     Query.AddParam('CODIGO', Codigo);
+    Query.AddParam('STATUS', Status);
     Query.ExecSQL;
     Res.Send<TJSONObject>(TJSONObject.Create.AddPair('message', 'Mesa ' + Codigo.ToString + ' encerrada com sucesso')).Status(THTTPStatus.OK);
   end
@@ -277,7 +336,24 @@ var
   Itens: TJSONArray;
   Complemento: TJSONObject;
   Complementos: TJSONArray;
+  QueryOpcoesNiveis: iQuery;
+  Opcoes: TJSONArray;
+  Opcao: TJSONObject;
+  CpOpcoes: TCpOpcoes;
+  CpAdicionais: TCpAdicionais;
 begin
+  CpOpcoes := TCpOpcoes.Create(TDatabase.Connection);
+  try
+    CpOpcoes.CriaTabela;
+  finally
+    CpOpcoes.DisposeOf;
+  end;
+  CpAdicionais := TCpAdicionais.Create(TDatabase.Connection);
+  try
+    CpAdicionais.CriaTabela;
+  finally
+    CpAdicionais.DisposeOf;
+  end;
   Comandas      := TJSONArray.Create;
   QueryComandas := TDatabase.Query;
   QueryComandas.Clear;
@@ -334,6 +410,28 @@ begin
       end;
       Item.AddPair('complementos', Complementos);
       Itens.AddElement(Item);
+       //Opcoes niveis
+      QueryOpcoesNiveis := TDatabase.Query;
+      QueryOpcoesNiveis.Clear;
+      QueryOpcoesNiveis.Add('SELECT CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, OP_NOME, OP_VALOR');
+      QueryOpcoesNiveis.Add('FROM CP_OPCOES JOIN NIVEIS ON CO_NI = NI_CODIGO');
+      QueryOpcoesNiveis.Add('JOIN OPCOES ON NI_CODIGO = OP_CODIGO');
+      QueryOpcoesNiveis.Add('WHERE CO_CP = :COM_PRO ORDER BY CO_CODIGO');    
+      QueryOpcoesNiveis.AddParam('COM_PRO', QueryComPro.DataSet.FieldByName('CP_CODIGO').AsInteger);
+      QueryOpcoesNiveis.Open;
+      Opcoes := TJSONArray.Create;
+      QueryOpcoesNiveis.DataSet.First;
+      while not QueryOpcoesNiveis.DataSet.Eof do
+      begin
+        Opcao := TJSONObject.Create;
+        Opcao.AddPair('codigo', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_CODIGO').AsInteger));
+        Opcao.AddPair('nome', QueryOpcoesNiveis.DataSet.FieldByName('OP_NOME').AsString);
+        Opcao.AddPair('valor', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('OP_VALOR').AsCurrency));
+        Opcao.AddPair('quantidade', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_QUANTIDADE').AsFloat));
+        Opcoes.AddElement(Opcao);
+        QueryOpcoesNiveis.DataSet.Next;
+      end;
+      Item.AddPair('OpcoesNiveis', Opcoes);
       QueryComPro.DataSet.Next;
     end;
     Comanda.AddPair('itens', Itens);
@@ -353,6 +451,9 @@ var
   Complemento: TJSONObject;
   QueryProduto: iQuery;
   oProduto: TJSONObject;
+  QueryOpcoesNiveis: iQuery;
+  Opcoes: TJSONArray;
+  Opcao: TJSONObject;
 begin
   // Codigo com_pro
   CodigoComPro := Req.Params.Items['codigo'].ToInteger();
@@ -403,6 +504,28 @@ begin
       QueryComplementos.DataSet.Next;
     end;
     Item.AddPair('complementos', Complementos);
+    //Opcoes niveis
+    QueryOpcoesNiveis := TDatabase.Query;
+    QueryOpcoesNiveis.Clear;
+    QueryOpcoesNiveis.Add('SELECT CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, OP_NOME, OP_VALOR');
+    QueryOpcoesNiveis.Add('FROM CP_OPCOES JOIN NIVEIS ON CO_NI = NI_CODIGO');
+    QueryOpcoesNiveis.Add('JOIN OPCOES ON NI_CODIGO = OP_CODIGO');
+    QueryOpcoesNiveis.Add('WHERE CO_CP = :COM_PRO ORDER BY CO_CODIGO');    
+    QueryOpcoesNiveis.AddParam('COM_PRO', Query.DataSet.FieldByName('CP_CODIGO').AsInteger);
+    QueryOpcoesNiveis.Open;
+    Opcoes := TJSONArray.Create;
+    QueryOpcoesNiveis.DataSet.First;
+    while not QueryOpcoesNiveis.DataSet.Eof do
+    begin
+      Opcao := TJSONObject.Create;
+      Opcao.AddPair('codigo', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_CODIGO').AsInteger));
+      Opcao.AddPair('nome', QueryOpcoesNiveis.DataSet.FieldByName('OP_NOME').AsString);
+      Opcao.AddPair('valor', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('OP_VALOR').AsCurrency));
+      Opcao.AddPair('quantidade', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_QUANTIDADE').AsFloat));
+      Opcoes.AddElement(Opcao);
+      QueryOpcoesNiveis.DataSet.Next;
+    end;
+    Item.AddPair('OpcoesNiveis', Opcoes);
     Query.DataSet.Next;
   end;
   Res.Send<TJSONObject>(Item);
@@ -419,7 +542,24 @@ var
   Itens: TJSONArray;
   Complemento: TJSONObject;
   Complementos: TJSONArray;
+  QueryOpcoesNiveis: iQuery;
+  CpOpcoes: TCpOpcoes;
+  CpAdicionais: TCpAdicionais;
+  Opcoes: TJSONArray;
+  Opcao: TJSONObject;
 begin
+	CpOpcoes := TCpOpcoes.Create(TDatabase.Connection);
+  try
+    CpOpcoes.CriaTabela;
+  finally
+    CpOpcoes.DisposeOf;
+  end;
+  CpAdicionais := TCpAdicionais.Create(TDatabase.Connection);
+  try
+    CpAdicionais.CriaTabela;
+  finally
+    CpAdicionais.DisposeOf;
+  end;
   if Req.Params.Count = 0 then
     raise Exception.Create('Paramentro "Codigo" não informado!');
   Codigo := Req.Params.Items['codigo'].ToInteger;
@@ -456,6 +596,7 @@ begin
     Item.AddPair('gradeProduto', BuscaDadosGrade(Query.DataSet.FieldByName('CP_GRA').AsInteger));
     Item.AddPair('usuario', TJSONNumber.Create(Query.DataSet.FieldByName('CP_USU').AsInteger));
     Item.AddPair('idAgrupamento', Query.DataSet.FieldByName('CP_ID_AGRUPAMENTO').AsString);
+    //adicionais
     QueryComplementos := TDatabase.Query;
     QueryComplementos.Clear;
     QueryComplementos.Add('SELECT CA_CODIGO, CA_CP, CA_ADI, CA_QUANTIDADE, ADI_NOME, ADI_VALOR FROM CP_ADICIONAIS JOIN ADICIONAIS ON CA_ADI = ADI_CODIGO WHERE CA_CP = :COM_PRO ORDER BY CA_CODIGO');
@@ -473,6 +614,28 @@ begin
       QueryComplementos.DataSet.Next;
     end;
     Item.AddPair('complementos', Complementos);
+    //Opcoes niveis
+    QueryOpcoesNiveis := TDatabase.Query;
+    QueryOpcoesNiveis.Clear;
+    QueryOpcoesNiveis.Add('SELECT CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, OP_NOME, OP_VALOR');
+    QueryOpcoesNiveis.Add('FROM CP_OPCOES JOIN NIVEIS ON CO_NI = NI_CODIGO');
+    QueryOpcoesNiveis.Add('JOIN OPCOES ON NI_CODIGO = OP_CODIGO');
+    QueryOpcoesNiveis.Add('WHERE CO_CP = :COM_PRO ORDER BY CO_CODIGO');    
+    QueryOpcoesNiveis.AddParam('COM_PRO', Query.DataSet.FieldByName('CP_CODIGO').AsInteger);
+    QueryOpcoesNiveis.Open;
+    Opcoes := TJSONArray.Create;
+    QueryOpcoesNiveis.DataSet.First;
+    while not QueryOpcoesNiveis.DataSet.Eof do
+    begin
+      Opcao := TJSONObject.Create;
+      Opcao.AddPair('codigo', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_CODIGO').AsInteger));
+      Opcao.AddPair('nome', QueryOpcoesNiveis.DataSet.FieldByName('OP_NOME').AsString);
+      Opcao.AddPair('valor', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('OP_VALOR').AsCurrency));
+      Opcao.AddPair('quantidade', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_QUANTIDADE').AsFloat));
+      Opcoes.AddElement(Opcao);
+      QueryOpcoesNiveis.DataSet.Next;
+    end;
+    Item.AddPair('OpcoesNiveis', Opcoes);
     Itens.AddElement(Item);
     Query.DataSet.Next;
   end;
@@ -492,7 +655,24 @@ var
   c: integer;
   TotalComanda: Currency;
   TotalComplementos: Currency;
+  Opcoes: TArray<TModelOpcoesNiveis>;
+  o: Integer;
+  TotalOpcoesNiveis: Currency;
+  CpOpcoes: TCpOpcoes;
+  CpAdicionais: TCpAdicionais;
 begin
+	CpOpcoes := TCpOpcoes.Create(TDatabase.Connection);
+  try
+    CpOpcoes.CriaTabela;
+  finally
+    CpOpcoes.DisposeOf;
+  end;
+  CpAdicionais := TCpAdicionais.Create(TDatabase.Connection);
+  try
+    CpAdicionais.CriaTabela;
+  finally
+    CpAdicionais.DisposeOf;
+  end;
   if Req.Body = '' then
     raise Exception.Create('Comanda não encontrada');
   Comanda := TModelComanda.FromJsonString(Req.Body);
@@ -541,6 +721,18 @@ begin
         Query.AddParam('QUANTIDADE', Complementos[c].Quantidade);
         Query.ExecSQL;
       end;
+      Opcoes := Comanda.Itens[i].OpcoesNiveis;
+      for o        := Low(Opcoes) to High(Opcoes) do
+      begin
+        Query.Clear;
+        Query.Add('INSERT INTO CP_OPCOES (CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, CO_VALOR)');
+        Query.Add('VALUES (GEN_ID(GEN_CP_OPCOES, 1), :CP, :NI, :QUANTIDADE, :VALOR);');
+        Query.AddParam('CP', CodigoComPro);
+        Query.AddParam('NI', Opcoes[o].codNivel);
+        Query.AddParam('QUANTIDADE', Opcoes[o].Quantidade);
+        Query.AddParam('VALOR', Opcoes[o].ValorAdicional);
+        Query.ExecSQL;
+      end;
     end;
   end;
   // soma comanda
@@ -551,7 +743,7 @@ begin
   Query.AddParam('CODIGO', CodigoComanda);
   Query.Open();
   TotalComanda := Query.DataSet.FieldByName('TOTAL').AsCurrency;
-  // verifica se ainda existe itens na comanda
+  // soma adicionais
   Query.Clear;
   Query.Add('SELECT SUM(ADI_VALOR * CA_QUANTIDADE) COMPLEMENTOS');
   Query.Add('FROM COM_PRO JOIN COMANDAS ON CP_COM = COM_CODIGO');
@@ -561,11 +753,20 @@ begin
   Query.AddParam('CODIGO', CodigoComanda);
   Query.Open();
   TotalComplementos := Query.DataSet.FieldByName('COMPLEMENTOS').AsCurrency;
+  // soma opcoes niveis
+  Query.Clear;
+  Query.Add('SELECT SUM(CO_VALOR * CO_QUANTIDADE) OPCOES');
+  Query.Add('FROM COM_PRO JOIN COMANDAS ON CP_COM = COM_CODIGO');
+  Query.Add('LEFT JOIN CP_OPCOES ON CO_CP = CP_CODIGO');
+  Query.Add('WHERE COM_CODIGO = :CODIGO AND CP_ESTADO <> ''E''');  
+  Query.AddParam('CODIGO', CodigoComanda);
+  Query.Open();
+  TotalOpcoesNiveis := Query.DataSet.FieldByName('OPCOES').AsCurrency;
   // Atualiza comandas
   Query.Clear;
   Query.Add('UPDATE COMANDAS SET COM_VALOR = :VALOR WHERE COM_CODIGO = :CODIGO');
   Query.AddParam('CODIGO', CodigoComanda);
-  Query.AddParam('VALOR', TotalComanda + TotalComplementos);
+  Query.AddParam('VALOR', TotalComanda + TotalComplementos + TotalOpcoesNiveis);
   Query.ExecSQL;
   // Atualiza o estado da mesa
   Query.Clear;
@@ -581,6 +782,7 @@ begin
   THorse.Get('/v1/comandas/:codigo', GetPorCodigo);
   THorse.Post('/v1/comandas', Post);
   THorse.Put('/v1/comandas/:codigo/encerrar', EncerrarComanda);
+  THorse.Put('/v1/comandas/:codigo/status/:status', AtualizarEstado);
   THorse.Put('/v1/comandas/:codigo', AtualizarComanda);
   THorse.Get('/v1/comandas/item/:codigo', GetItemComPro);
   THorse.Delete('/v1/comandas/:codigo/itens', DeletarItemComanda);
@@ -608,17 +810,17 @@ initialization
     .&End
 
     // Operacoes por codigo da mesa/comanda
-    .Path('comandas/{codigo}')
+    .Path('comandas/{mesa}')
       .Tag('comandas')
-      .GET('Obtem Comanda por codigo', 'Retorna os dados de uma comanda por codigo')
-        .AddParamPath('codigo', 'Codigo da comanda').Required(True).Schema(SWAG_INTEGER).&End
+      .GET('Obtem Comanda por codigo da mesa', 'Retorna os dados de uma comanda por codigo da mesa')
+        .AddParamPath('mesa', 'Codigo da mesa').Required(True).Schema(SWAG_INTEGER).&End
         .AddResponse(200, 'Ok').&End
         .AddResponse(400).&End
         .AddResponse(500).&End
       .&End
       .PUT('Atualizar Comanda', 'Atualiza itens/complementos da comanda')
         .AddParamPath('codigo', 'Codigo da mesa').Required(True).Schema(SWAG_INTEGER).&End
-        .AddParamBody('Dados da Comanda', 'Comanda').Required(True).Schema('object').&End
+        .AddParamBody('Dados da Comanda', 'Comanda').Required(True).Schema(TModelComanda).&End
         .AddResponse(200, 'Ok').&End
         .AddResponse(400).&End
         .AddResponse(500).&End
@@ -626,10 +828,21 @@ initialization
     .&End
 
     // Encerrar comanda (path com action)
-    .Path('comandas/{codigo}/encerrar')
+    .Path('comandas/{mesa}/encerrar')
       .Tag('comandas')
       .PUT('Encerrar Comanda', 'Marca a comanda como encerrada e atualiza estado da mesa')
+        .AddParamPath('mesa', 'Codigo da mesa').Required(True).Schema(SWAG_INTEGER).&End
+        .AddResponse(200, 'Ok').&End
+        .AddResponse(400).&End
+        .AddResponse(500).&End
+      .&End
+    .&End
+
+    .Path('comandas/{codigo}/status/{status}')
+      .Tag('comandas')
+      .PUT('Status Mesa', 'atualiza estado da mesa')      
         .AddParamPath('codigo', 'Codigo da mesa/comanda').Required(True).Schema(SWAG_INTEGER).&End
+        .AddParamPath('status', 'Estado da mesa/comanda').Required(True).Schema(SWAG_STRING).&End
         .AddResponse(200, 'Ok').&End
         .AddResponse(400).&End
         .AddResponse(500).&End

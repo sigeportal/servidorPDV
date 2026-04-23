@@ -60,10 +60,7 @@ implementation
 { TOperacaoVenda }
 
 uses
-	System.SysUtils,
-	Vcl.Graphics,
-	QRPrntr,
-	Vcl.Forms,
+	System.SysUtils,	
 	UnitInsereTabela.Model,
 	UnitDAV.Model,
 	UnitDatabase,

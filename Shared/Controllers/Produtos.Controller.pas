@@ -37,56 +37,65 @@ uses
 	UnitFuncoesComuns, 
   UnitTabela.Helpers,
   UnitDatabase,
-  UnitProdutos.Model;
+  UnitProdutos.Model, UnitGrades.Model;
 
 class procedure TProdutosController.Get(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 var
   Query    : iQuery;
   Categoria: integer;
+  Busca: string;
   aJson    : TJSONArray;
   oJson    : TJSONObject;
   grupo: Integer;
+  Grades: TGrades;
 begin
+	Grades := TGrades.Create(TDatabase.Connection);
+  try
+    Grades.CriaTabela;
+  finally
+    Grades.DisposeOf;
+  end;
   Query := TDatabase.Query;
   aJson := TJSONArray.Create;
   Query.Clear;
+  Busca := Trim(Req.Query.Items['busca']);
+
+  Query.Add('SELECT PRO_CODIGO, PRO_NOME, PRO_CODBARRA, PRO_VALORV, GRU_CODIGO, GRU_G1, G1_NOME,');
+  Query.Add('(SELECT FIRST 1 GRA_CODIGO FROM GRADES WHERE GRA_PRO = PRO_CODIGO) GRA_CODIGO');
+  Query.Add('FROM PRODUTOS JOIN GRUPOS ON PRO_GRU = GRU_CODIGO JOIN GRUPO_1 ON G1_CODIGO = GRU_G1');
+  Query.Add('WHERE PRO_ESTADO = ''ATIVO''');
+
   if Req.Query.Count > 0 then
   begin
     if Req.Query.ContainsKey('categoria') then
     begin
       Categoria := Req.Query.Items['categoria'].ToInteger;
-      Query.Add('SELECT PRO_CODIGO, PRO_NOME, PRO_VALORV, GRU_CODIGO, GRU_G1, G1_NOME,');
-      Query.Add('(SELECT FIRST 1 GRA_CODIGO FROM GRADES WHERE GRA_PRO = PRO_CODIGO) GRA_CODIGO');
-      Query.Add('FROM PRODUTOS JOIN GRUPOS ON PRO_GRU = GRU_CODIGO JOIN GRUPO_1 ON G1_CODIGO = GRU_G1 AND GRU_CODIGO = :SUBGRUPO');
-      Query.Add('WHERE PRO_ESTADO = ''ATIVO'' ORDER BY PRO_NOME');
+      Query.Add('AND GRU_CODIGO = :SUBGRUPO');
       Query.AddParam('SUBGRUPO', Categoria);
-      Query.Open;
     end;
     if Req.Query.ContainsKey('grupo') then
     begin
       grupo := Req.Query.Items['grupo'].ToInteger;
-      Query.Add('SELECT PRO_CODIGO, PRO_NOME, PRO_VALORV, GRU_CODIGO, GRU_G1, G1_NOME,');
-      Query.Add('(SELECT FIRST 1 GRA_CODIGO FROM GRADES WHERE GRA_PRO = PRO_CODIGO) GRA_CODIGO');
-      Query.Add('FROM PRODUTOS JOIN GRUPOS ON PRO_GRU = GRU_CODIGO JOIN GRUPO_1 ON G1_CODIGO = GRU_G1 AND GRU_G1 = :GRUPO');
-      Query.Add('WHERE PRO_ESTADO = ''ATIVO'' ORDER BY PRO_NOME');
+      Query.Add('AND GRU_G1 = :GRUPO');
       Query.AddParam('GRUPO', grupo);
-      Query.Open;
     end;
-  end
-  else
-  begin
-    Query.Add('SELECT PRO_CODIGO, PRO_NOME, PRO_VALORV, GRU_CODIGO, GRU_G1, G1_NOME,');
-    Query.Add('(SELECT FIRST 1 GRA_CODIGO FROM GRADES WHERE GRA_PRO = PRO_CODIGO) GRA_CODIGO');
-    Query.Add('FROM PRODUTOS JOIN GRUPOS ON PRO_GRU = GRU_CODIGO JOIN GRUPO_1 ON G1_CODIGO = GRU_G1');
-    Query.Add('WHERE PRO_ESTADO = ''ATIVO'' ORDER BY PRO_NOME');
-    Query.Open();
   end;
+
+  if Busca <> '' then
+  begin
+    Query.Add('AND (UPPER(PRO_NOME) LIKE :BUSCA OR CAST(PRO_CODIGO AS VARCHAR(20)) LIKE :BUSCA OR UPPER(PRO_CODBARRA) LIKE :BUSCA)');
+    Query.AddParam('BUSCA', '%' + UpperCase(Busca) + '%');
+  end;
+
+  Query.Add('ORDER BY PRO_NOME');
+  Query.Open();
   Query.DataSet.First;
   while not Query.DataSet.Eof do
   begin
     oJson     := TJSONObject.Create;
     oJson.AddPair('codigo', TJSONNumber.Create(Query.DataSet.FieldByName('PRO_CODIGO').AsInteger));
     oJson.AddPair('nome', Query.DataSet.FieldByName('PRO_NOME').AsString);
+    oJson.AddPair('codbarra', Query.DataSet.FieldByName('PRO_CODBARRA').AsString);
     oJson.AddPair('valor', TJSONNumber.Create(Query.DataSet.FieldByName('PRO_VALORV').AsCurrency));
     oJson.AddPair('categoria', TJSONNumber.Create(Query.DataSet.FieldByName('GRU_CODIGO').AsInteger));
     oJson.AddPair('grade', TJSONNumber.Create(Query.DataSet.FieldByName('GRA_CODIGO').AsInteger));
@@ -247,7 +256,7 @@ begin
   Query := TDatabase.Query;
   Query.Clear;
   Codigo := Req.Params.Items['codigo'].ToInteger;
-  Query.Add('SELECT PRO_CODIGO, PRO_NOME, PRO_VALORV, PRO_GRU, GRU_G1, G1_NOME,');
+  Query.Add('SELECT PRO_CODIGO, PRO_NOME, PRO_CODBARRA, PRO_VALORV, PRO_GRU, GRU_G1, G1_NOME,');
   Query.Add('(SELECT FIRST 1 GRA_CODIGO FROM GRADES WHERE GRA_PRO = PRO_CODIGO) GRA_CODIGO');
   Query.Add('FROM PRODUTOS JOIN GRUPOS ON PRO_GRU = GRU_CODIGO JOIN GRUPO_1 ON G1_CODIGO = GRU_G1');
   Query.Add('AND PRO_CODIGO = :CODIGO');
@@ -259,6 +268,7 @@ begin
     oJson     := TJSONObject.Create;
     oJson.AddPair('codigo', TJSONNumber.Create(CodPro));
     oJson.AddPair('nome', Query.DataSet.FieldByName('PRO_NOME').AsString);
+    oJson.AddPair('codbarra', Query.DataSet.FieldByName('PRO_CODBARRA').AsString);
     oJson.AddPair('valor', TJSONNumber.Create(Query.DataSet.FieldByName('PRO_VALORV').AsCurrency));
     oJson.AddPair('categoria', TJSONNumber.Create(Query.DataSet.FieldByName('PRO_GRU').AsInteger));
     oJson.AddPair('grade', TJSONNumber.Create(Query.DataSet.FieldByName('GRA_CODIGO').AsInteger));

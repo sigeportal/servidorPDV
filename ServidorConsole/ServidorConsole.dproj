@@ -5,9 +5,9 @@
         <FrameworkType>VCL</FrameworkType>
         <MainSource>ServidorConsole.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
-        <TargetedPlatforms>1</TargetedPlatforms>
+        <TargetedPlatforms>129</TargetedPlatforms>
         <AppType>Console</AppType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
@@ -37,6 +37,12 @@
     <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
         <Cfg_2>true</Cfg_2>
         <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Linux64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Linux64)'!=''">
+        <Cfg_2_Linux64>true</Cfg_2_Linux64>
+        <CfgParent>Cfg_2</CfgParent>
+        <Cfg_2>true</Cfg_2>
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
@@ -92,6 +98,12 @@
         <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
         <DCC_DebugInformation>0</DCC_DebugInformation>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2_Linux64)'!=''">
+        <Debugger_Launcher>/usr/bin/xterm -e &quot;%debuggee%&quot;</Debugger_Launcher>
+        <Manifest_File>(None)</Manifest_File>
+        <DCC_Define>PORTALORM;$(DCC_Define)</DCC_Define>
+        <DCC_ExeOutput>./dist</DCC_ExeOutput>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <DCC_Define>PORTALORM;$(DCC_Define)</DCC_Define>
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -107,6 +119,9 @@
         <DCCReference Include="..\Shared\Controllers\Complementos.Controller.pas"/>
         <DCCReference Include="..\Shared\Controllers\Mesas.Controller.pas"/>
         <DCCReference Include="..\Shared\Controllers\Produtos.Controller.pas"/>
+        <DCCReference Include="..\Shared\Controllers\Estoque.Controller.pas"/>
+        <DCCReference Include="..\Shared\Controllers\FluxoCaixa.Controller.pas"/>
+        <DCCReference Include="..\Shared\Controllers\Relatorios.Controller.pas"/>
         <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Database\UnitDatabase.pas"/>
         <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitConstants.pas"/>
         <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitFuncoesComuns.Controller.pas"/>
@@ -141,6 +156,7 @@
         <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitDataset.Controller.pas"/>
         <DCCReference Include="..\Shared\Model\CpAdicionais\UnitCpAdicionais.Model.pas"/>
         <DCCReference Include="..\Shared\Model\CpOpcoes\UnitCpOpcoes.Model.pas"/>
+        <DCCReference Include="..\Shared\Model\Grades\UnitGrades.Model.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -617,7 +633,7 @@
                 <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
             </Deployment>
             <Platforms>
-                <Platform value="Linux64">False</Platform>
+                <Platform value="Linux64">True</Platform>
                 <Platform value="Win32">True</Platform>
             </Platforms>
         </BorlandProject>

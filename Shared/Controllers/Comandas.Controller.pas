@@ -35,7 +35,8 @@ implementation
 
 { TComandasController }
 
-uses UnitConstants, UnitDatabase, UnitCpAdicionais.Model, UnitCpOpcoes.Model;
+uses UnitConstants, UnitDatabase, UnitCpAdicionais.Model, UnitCpOpcoes.Model, 
+  System.StrUtils;
 
 class procedure TComandasController.AtualizarComanda(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 var
@@ -101,12 +102,16 @@ begin
       for o        := Low(Opcoes) to High(Opcoes) do
       begin
         Query.Clear;
-        Query.Add('INSERT INTO CP_OPCOES (CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, CO_VALOR)');
-        Query.Add('VALUES (GEN_ID(GEN_CP_OPCOES, 1), :CP, :NI, :QUANTIDADE, :VALOR);');
+        Query.Add('INSERT INTO CP_OPCOES (CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, CO_VALOR, CO_NOME, CO_ATIVO, CO_SELECIONADO, CO_OP)');
+        Query.Add('VALUES (GEN_ID(GEN_CP_OPCOES, 1), :CP, :NI, :QUANTIDADE, :VALOR, :NOME, :ATIVO, :SELECIONADO, :COD_OPCAO);');
         Query.AddParam('CP', CodigoComPro);
         Query.AddParam('NI', Opcoes[o].codNivel);
         Query.AddParam('QUANTIDADE', Opcoes[o].Quantidade);
         Query.AddParam('VALOR', Opcoes[o].ValorAdicional);
+        Query.AddParam('NOME', Opcoes[o].nome);
+        Query.AddParam('ATIVO', Opcoes[o].ativoStr);
+        Query.AddParam('SELECIONADO', ifthen(Opcoes[o].selecionado, 'S', 'N'));
+        Query.AddParam('COD_OPCAO', Opcoes[o].codigo);
         Query.ExecSQL;
       end;
     end;
@@ -413,10 +418,8 @@ begin
        //Opcoes niveis
       QueryOpcoesNiveis := TDatabase.Query;
       QueryOpcoesNiveis.Clear;
-      QueryOpcoesNiveis.Add('SELECT CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, OP_NOME, OP_VALOR');
-      QueryOpcoesNiveis.Add('FROM CP_OPCOES JOIN NIVEIS ON CO_NI = NI_CODIGO');
-      QueryOpcoesNiveis.Add('JOIN OPCOES ON NI_CODIGO = OP_CODIGO');
-      QueryOpcoesNiveis.Add('WHERE CO_CP = :COM_PRO ORDER BY CO_CODIGO');    
+      QueryOpcoesNiveis.Add('SELECT CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, CO_VALOR, CO_NOME, CO_ATIVO, CO_SELECIONADO, CO_OP');
+      QueryOpcoesNiveis.Add('FROM CP_OPCOES WHERE CO_CP = :COM_PRO ORDER BY CO_CODIGO');    
       QueryOpcoesNiveis.AddParam('COM_PRO', QueryComPro.DataSet.FieldByName('CP_CODIGO').AsInteger);
       QueryOpcoesNiveis.Open;
       Opcoes := TJSONArray.Create;
@@ -424,9 +427,13 @@ begin
       while not QueryOpcoesNiveis.DataSet.Eof do
       begin
         Opcao := TJSONObject.Create;
-        Opcao.AddPair('codigo', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_CODIGO').AsInteger));
-        Opcao.AddPair('nome', QueryOpcoesNiveis.DataSet.FieldByName('OP_NOME').AsString);
-        Opcao.AddPair('valor', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('OP_VALOR').AsCurrency));
+        Opcao.AddPair('codigo', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_OP').AsInteger));
+        Opcao.AddPair('nome', QueryOpcoesNiveis.DataSet.FieldByName('CO_NOME').AsString);
+        Opcao.AddPair('valorAdicional', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_VALOR').AsCurrency));
+        Opcao.AddPair('ativo', TJSONBool.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_ATIVO').AsString.Contains('S')));
+        Opcao.AddPair('ativoStr', QueryOpcoesNiveis.DataSet.FieldByName('CO_ATIVO').AsString);
+        Opcao.AddPair('codNivel', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_NI').AsInteger));
+        Opcao.AddPair('selecionado', TJSONBool.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_SELECIONADO').AsString.Contains('S')));
         Opcao.AddPair('quantidade', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_QUANTIDADE').AsFloat));
         Opcoes.AddElement(Opcao);
         QueryOpcoesNiveis.DataSet.Next;
@@ -504,27 +511,29 @@ begin
       QueryComplementos.DataSet.Next;
     end;
     Item.AddPair('complementos', Complementos);
-    //Opcoes niveis
-    QueryOpcoesNiveis := TDatabase.Query;
-    QueryOpcoesNiveis.Clear;
-    QueryOpcoesNiveis.Add('SELECT CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, OP_NOME, OP_VALOR');
-    QueryOpcoesNiveis.Add('FROM CP_OPCOES JOIN NIVEIS ON CO_NI = NI_CODIGO');
-    QueryOpcoesNiveis.Add('JOIN OPCOES ON NI_CODIGO = OP_CODIGO');
-    QueryOpcoesNiveis.Add('WHERE CO_CP = :COM_PRO ORDER BY CO_CODIGO');    
-    QueryOpcoesNiveis.AddParam('COM_PRO', Query.DataSet.FieldByName('CP_CODIGO').AsInteger);
-    QueryOpcoesNiveis.Open;
-    Opcoes := TJSONArray.Create;
-    QueryOpcoesNiveis.DataSet.First;
-    while not QueryOpcoesNiveis.DataSet.Eof do
-    begin
-      Opcao := TJSONObject.Create;
-      Opcao.AddPair('codigo', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_CODIGO').AsInteger));
-      Opcao.AddPair('nome', QueryOpcoesNiveis.DataSet.FieldByName('OP_NOME').AsString);
-      Opcao.AddPair('valor', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('OP_VALOR').AsCurrency));
-      Opcao.AddPair('quantidade', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_QUANTIDADE').AsFloat));
-      Opcoes.AddElement(Opcao);
-      QueryOpcoesNiveis.DataSet.Next;
-    end;
+     //Opcoes niveis
+      QueryOpcoesNiveis := TDatabase.Query;
+      QueryOpcoesNiveis.Clear;
+      QueryOpcoesNiveis.Add('SELECT CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, CO_VALOR, CO_NOME, CO_ATIVO, CO_SELECIONADO, CO_OP');
+      QueryOpcoesNiveis.Add('FROM CP_OPCOES WHERE CO_CP = :COM_PRO ORDER BY CO_CODIGO');    
+      QueryOpcoesNiveis.AddParam('COM_PRO', Query.DataSet.FieldByName('CP_CODIGO').AsInteger);
+      QueryOpcoesNiveis.Open;
+      Opcoes := TJSONArray.Create;
+      QueryOpcoesNiveis.DataSet.First;
+      while not QueryOpcoesNiveis.DataSet.Eof do
+      begin
+        Opcao := TJSONObject.Create;
+        Opcao.AddPair('codigo', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_OP').AsInteger));
+        Opcao.AddPair('nome', QueryOpcoesNiveis.DataSet.FieldByName('CO_NOME').AsString);
+        Opcao.AddPair('valorAdicional', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_VALOR').AsCurrency));
+        Opcao.AddPair('ativo', TJSONBool.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_ATIVO').AsString.Contains('S')));
+        Opcao.AddPair('ativoStr', QueryOpcoesNiveis.DataSet.FieldByName('CO_ATIVO').AsString);
+        Opcao.AddPair('codNivel', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_NI').AsInteger));
+        Opcao.AddPair('selecionado', TJSONBool.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_SELECIONADO').AsString.Contains('S')));
+        Opcao.AddPair('quantidade', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_QUANTIDADE').AsFloat));
+        Opcoes.AddElement(Opcao);
+        QueryOpcoesNiveis.DataSet.Next;
+      end;
     Item.AddPair('OpcoesNiveis', Opcoes);
     Query.DataSet.Next;
   end;
@@ -614,27 +623,29 @@ begin
       QueryComplementos.DataSet.Next;
     end;
     Item.AddPair('complementos', Complementos);
-    //Opcoes niveis
-    QueryOpcoesNiveis := TDatabase.Query;
-    QueryOpcoesNiveis.Clear;
-    QueryOpcoesNiveis.Add('SELECT CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, OP_NOME, OP_VALOR');
-    QueryOpcoesNiveis.Add('FROM CP_OPCOES JOIN NIVEIS ON CO_NI = NI_CODIGO');
-    QueryOpcoesNiveis.Add('JOIN OPCOES ON NI_CODIGO = OP_CODIGO');
-    QueryOpcoesNiveis.Add('WHERE CO_CP = :COM_PRO ORDER BY CO_CODIGO');    
-    QueryOpcoesNiveis.AddParam('COM_PRO', Query.DataSet.FieldByName('CP_CODIGO').AsInteger);
-    QueryOpcoesNiveis.Open;
-    Opcoes := TJSONArray.Create;
-    QueryOpcoesNiveis.DataSet.First;
-    while not QueryOpcoesNiveis.DataSet.Eof do
-    begin
-      Opcao := TJSONObject.Create;
-      Opcao.AddPair('codigo', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_CODIGO').AsInteger));
-      Opcao.AddPair('nome', QueryOpcoesNiveis.DataSet.FieldByName('OP_NOME').AsString);
-      Opcao.AddPair('valor', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('OP_VALOR').AsCurrency));
-      Opcao.AddPair('quantidade', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_QUANTIDADE').AsFloat));
-      Opcoes.AddElement(Opcao);
-      QueryOpcoesNiveis.DataSet.Next;
-    end;
+     //Opcoes niveis
+      QueryOpcoesNiveis := TDatabase.Query;
+      QueryOpcoesNiveis.Clear;
+      QueryOpcoesNiveis.Add('SELECT CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, CO_VALOR, CO_NOME, CO_ATIVO, CO_SELECIONADO, CO_OP');
+      QueryOpcoesNiveis.Add('FROM CP_OPCOES WHERE CO_CP = :COM_PRO ORDER BY CO_CODIGO');    
+      QueryOpcoesNiveis.AddParam('COM_PRO', Query.DataSet.FieldByName('CP_CODIGO').AsInteger);
+      QueryOpcoesNiveis.Open;
+      Opcoes := TJSONArray.Create;
+      QueryOpcoesNiveis.DataSet.First;
+      while not QueryOpcoesNiveis.DataSet.Eof do
+      begin
+        Opcao := TJSONObject.Create;
+        Opcao.AddPair('codigo', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_OP').AsInteger));
+        Opcao.AddPair('nome', QueryOpcoesNiveis.DataSet.FieldByName('CO_NOME').AsString);
+        Opcao.AddPair('valorAdicional', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_VALOR').AsCurrency));
+        Opcao.AddPair('ativo', TJSONBool.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_ATIVO').AsString.Contains('S')));
+        Opcao.AddPair('ativoStr', QueryOpcoesNiveis.DataSet.FieldByName('CO_ATIVO').AsString);
+        Opcao.AddPair('codNivel', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_NI').AsInteger));
+        Opcao.AddPair('selecionado', TJSONBool.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_SELECIONADO').AsString.Contains('S')));
+        Opcao.AddPair('quantidade', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_QUANTIDADE').AsFloat));
+        Opcoes.AddElement(Opcao);
+        QueryOpcoesNiveis.DataSet.Next;
+      end;
     Item.AddPair('OpcoesNiveis', Opcoes);
     Itens.AddElement(Item);
     Query.DataSet.Next;
@@ -725,12 +736,16 @@ begin
       for o        := Low(Opcoes) to High(Opcoes) do
       begin
         Query.Clear;
-        Query.Add('INSERT INTO CP_OPCOES (CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, CO_VALOR)');
-        Query.Add('VALUES (GEN_ID(GEN_CP_OPCOES, 1), :CP, :NI, :QUANTIDADE, :VALOR);');
+        Query.Add('INSERT INTO CP_OPCOES (CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, CO_VALOR, CO_NOME, CO_ATIVO, CO_SELECIONADO, CO_OP)');
+        Query.Add('VALUES (GEN_ID(GEN_CP_OPCOES, 1), :CP, :NI, :QUANTIDADE, :VALOR, :NOME, :ATIVO, :SELECIONADO, :COD_OPCAO);');
         Query.AddParam('CP', CodigoComPro);
         Query.AddParam('NI', Opcoes[o].codNivel);
         Query.AddParam('QUANTIDADE', Opcoes[o].Quantidade);
         Query.AddParam('VALOR', Opcoes[o].ValorAdicional);
+        Query.AddParam('NOME', Opcoes[o].nome);
+        Query.AddParam('ATIVO', Opcoes[o].ativoStr);
+        Query.AddParam('SELECIONADO', ifthen(Opcoes[o].selecionado, 'S', 'N'));
+        Query.AddParam('COD_OPCAO', Opcoes[o].codigo);
         Query.ExecSQL;
       end;
     end;
@@ -819,7 +834,7 @@ initialization
         .AddResponse(500).&End
       .&End
       .PUT('Atualizar Comanda', 'Atualiza itens/complementos da comanda')
-        .AddParamPath('codigo', 'Codigo da mesa').Required(True).Schema(SWAG_INTEGER).&End
+        .AddParamPath('mesa', 'Codigo da mesa').Required(True).Schema(SWAG_INTEGER).&End
         .AddParamBody('Dados da Comanda', 'Comanda').Required(True).Schema(TModelComanda).&End
         .AddResponse(200, 'Ok').&End
         .AddResponse(400).&End

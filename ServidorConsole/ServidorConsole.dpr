@@ -21,10 +21,8 @@ uses
   Produtos.Controller in '..\Shared\Controllers\Produtos.Controller.pas',
   UnitDatabase in '..\..\..\FormsComuns\Classes\ServidoresUtils\Database\UnitDatabase.pas',
   UnitConstants in '..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitConstants.pas',
-  UnitFuncoesComuns.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitFuncoesComuns.Controller.pas',
   UnitFuncoesComuns in '..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitFuncoesComuns.pas',
   UnitFunctions in '..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitFunctions.pas',
-  UnitLogin.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitLogin.Controller.pas',
   UnitVendas.Model in '..\Shared\Model\Vendas\UnitVendas.Model.pas',
   UnitVendas.Controller in '..\Shared\Model\Vendas\UnitVendas.Controller.pas',
   UnitVenEst.Model in '..\Shared\Model\VenEst\UnitVenEst.Model.pas',
@@ -50,9 +48,11 @@ uses
   UnitEmpresa.Model in '..\..\..\FormsComuns\Classes\Empresa\UnitEmpresa.Model.pas',
   UnitEmpresa.Controller in '..\..\..\FormsComuns\Classes\Empresa\UnitEmpresa.Controller.pas',
   UnitControleSenhas.Controller in '..\Shared\Controllers\UnitControleSenhas.Controller.pas',
-  UnitDataset.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitDataset.Controller.pas',
   UnitCpAdicionais.Model in '..\Shared\Model\CpAdicionais\UnitCpAdicionais.Model.pas',
-  UnitCpOpcoes.Model in '..\Shared\Model\CpOpcoes\UnitCpOpcoes.Model.pas';
+  UnitCpOpcoes.Model in '..\Shared\Model\CpOpcoes\UnitCpOpcoes.Model.pas',
+  UnitFuncoesComuns.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitFuncoesComuns.Controller.pas',
+  UnitLogin.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitLogin.Controller.pas',
+  UnitDataset.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitDataset.Controller.pas';
 
 var
 	LLogFileConfig: THorseLoggerConsoleConfig;
@@ -98,7 +98,7 @@ begin
 		TControleSenhasController.Router;
 
 		// start server
-		THorse.Listen(9000,
+		THorse.Listen(ObterPorta,
 			procedure
 			begin
 				Writeln('Servidor rodando na porta', ': ', THorse.Port.ToString);

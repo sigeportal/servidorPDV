@@ -6,8 +6,8 @@
         <MainSource>ServidorConsole.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Release</Config>
-        <Platform Condition="'$(Platform)'==''">Win32</Platform>
-        <TargetedPlatforms>1</TargetedPlatforms>
+        <Platform Condition="'$(Platform)'==''">Linux64</Platform>
+        <TargetedPlatforms>129</TargetedPlatforms>
         <AppType>Console</AppType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
@@ -37,6 +37,12 @@
     <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
         <Cfg_2>true</Cfg_2>
         <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Linux64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Linux64)'!=''">
+        <Cfg_2_Linux64>true</Cfg_2_Linux64>
+        <CfgParent>Cfg_2</CfgParent>
+        <Cfg_2>true</Cfg_2>
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
@@ -92,6 +98,12 @@
         <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
         <DCC_DebugInformation>0</DCC_DebugInformation>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2_Linux64)'!=''">
+        <Debugger_Launcher>/usr/bin/xterm -e &quot;%debuggee%&quot;</Debugger_Launcher>
+        <Manifest_File>(None)</Manifest_File>
+        <DCC_Define>PORTALORM;$(DCC_Define)</DCC_Define>
+        <DCC_ExeOutput>./dist</DCC_ExeOutput>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <DCC_Define>PORTALORM;$(DCC_Define)</DCC_Define>
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -109,10 +121,8 @@
         <DCCReference Include="..\Shared\Controllers\Produtos.Controller.pas"/>
         <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Database\UnitDatabase.pas"/>
         <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitConstants.pas"/>
-        <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitFuncoesComuns.Controller.pas"/>
         <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitFuncoesComuns.pas"/>
         <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitFunctions.pas"/>
-        <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitLogin.Controller.pas"/>
         <DCCReference Include="..\Shared\Model\Vendas\UnitVendas.Model.pas"/>
         <DCCReference Include="..\Shared\Model\Vendas\UnitVendas.Controller.pas"/>
         <DCCReference Include="..\Shared\Model\VenEst\UnitVenEst.Model.pas"/>
@@ -138,9 +148,11 @@
         <DCCReference Include="..\..\..\FormsComuns\Classes\Empresa\UnitEmpresa.Model.pas"/>
         <DCCReference Include="..\..\..\FormsComuns\Classes\Empresa\UnitEmpresa.Controller.pas"/>
         <DCCReference Include="..\Shared\Controllers\UnitControleSenhas.Controller.pas"/>
-        <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitDataset.Controller.pas"/>
         <DCCReference Include="..\Shared\Model\CpAdicionais\UnitCpAdicionais.Model.pas"/>
         <DCCReference Include="..\Shared\Model\CpOpcoes\UnitCpOpcoes.Model.pas"/>
+        <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitFuncoesComuns.Controller.pas"/>
+        <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitLogin.Controller.pas"/>
+        <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitDataset.Controller.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -173,8 +185,15 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libcgunwind.1.0.dylib" Class="DependencyModule">
-                    <Platform Name="iOSSimulator">
+                <DeployFile LocalName="Win32\Release\ServidorConsole.exe" Configuration="Release" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>ServidorConsole.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="dist\ServidorConsole" Configuration="Release" Class="ProjectOutput">
+                    <Platform Name="Linux64">
+                        <RemoteName>ServidorConsole</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -183,14 +202,13 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="$(BDS)\Redist\osx32\libcgsqlite3.dylib" Class="DependencyModule">
-                    <Platform Name="OSX32">
+                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libcgunwind.1.0.dylib" Class="DependencyModule">
+                    <Platform Name="iOSSimulator">
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Win32\Release\ServidorConsole.exe" Configuration="Release" Class="ProjectOutput">
-                    <Platform Name="Win32">
-                        <RemoteName>ServidorConsole.exe</RemoteName>
+                <DeployFile LocalName="$(BDS)\Redist\osx32\libcgsqlite3.dylib" Class="DependencyModule">
+                    <Platform Name="OSX32">
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -617,7 +635,7 @@
                 <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
             </Deployment>
             <Platforms>
-                <Platform value="Linux64">False</Platform>
+                <Platform value="Linux64">True</Platform>
                 <Platform value="Win32">True</Platform>
             </Platforms>
         </BorlandProject>

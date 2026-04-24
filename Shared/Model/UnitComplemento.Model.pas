@@ -16,14 +16,22 @@ type
   TModelOpcoesNiveis = class
   private
     Fcodigo: integer;
-    Fquantidade: double;
+    Fnome: string;
     FValorAdicional: Currency;
-    FcodNivel: integer;
+    Fativo: boolean;
+    FativoStr: string;
+    FcodNivel: integer;        
+    Fselecionado: Boolean;
+    Fquantidade: double;      
   public
-    property codigo: integer read Fcodigo write Fcodigo;    
-    property codNivel: integer read FcodNivel write FcodNivel;
-    property quantidade: double read Fquantidade write Fquantidade;
+    property codigo: integer read Fcodigo write Fcodigo; 
+    property nome: string read Fnome write Fnome;
     property ValorAdicional: Currency read FValorAdicional write FValorAdicional;
+    property ativo: boolean read Fativo write Fativo;
+    property ativoStr: string read FativoStr write FativoStr;
+    property codNivel: integer read FcodNivel write FcodNivel;
+    property selecionado: Boolean read Fselecionado write Fselecionado;
+    property quantidade: double read Fquantidade write Fquantidade;
     class function FromJsonString(JsonString: String): TModelOpcoesNiveis;
     function ToJson: String;
   end;

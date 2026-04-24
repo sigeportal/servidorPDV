@@ -165,9 +165,9 @@ begin
     Query.DataSet.First;
     if not Query.DataSet.IsEmpty then
     begin
-      imgBase64 := ConvertFileToBase64(Query.DataSet.FieldByName('PRO_CAMINHO_IMAGEM').AsString);
+//      imgBase64 := ConvertFileToBase64(Query.DataSet.FieldByName('PRO_CAMINHO_IMAGEM').AsString);
       oJson     := TJSONObject.Create;
-      oJson.AddPair('base64', imgBase64);
+      oJson.AddPair('url', Query.DataSet.FieldByName('PRO_CAMINHO_IMAGEM').AsString);
       Res.Send<TJSONObject>(oJson);
     end;
   end else

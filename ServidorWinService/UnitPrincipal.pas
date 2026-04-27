@@ -39,6 +39,9 @@ uses Comandas.Controller,
      Login.Controller,
      Mesas.Controller,
      Produtos.Controller,
+  Estoque.Controller,
+  FluxoCaixa.Controller,
+    Relatorios.Controller,
      Complementos.Controller;
 
 procedure ServiceController(CtrlCode: DWord); stdcall;
@@ -62,6 +65,9 @@ begin
   TMesasController.Registrar;
   TComandasController.Registrar;
   TProdutosController.Registrar;
+  TEstoqueController.Registrar;
+  TFluxoCaixaController.Registrar;
+  TRelatoriosController.Registrar;
   TComplementosController.Registrar;
 end;
 

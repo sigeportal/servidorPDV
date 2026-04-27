@@ -19,6 +19,9 @@ uses
   Complementos.Controller in '..\Shared\Controllers\Complementos.Controller.pas',
   Mesas.Controller in '..\Shared\Controllers\Mesas.Controller.pas',
   Produtos.Controller in '..\Shared\Controllers\Produtos.Controller.pas',
+  Estoque.Controller in '..\Shared\Controllers\Estoque.Controller.pas',
+  FluxoCaixa.Controller in '..\Shared\Controllers\FluxoCaixa.Controller.pas',
+  Relatorios.Controller in '..\Shared\Controllers\Relatorios.Controller.pas',
   UnitDatabase in '..\..\..\FormsComuns\Classes\ServidoresUtils\Database\UnitDatabase.pas',
   UnitConstants in '..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitConstants.pas',
   UnitFuncoesComuns in '..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitFuncoesComuns.pas',
@@ -52,7 +55,8 @@ uses
   UnitCpOpcoes.Model in '..\Shared\Model\CpOpcoes\UnitCpOpcoes.Model.pas',
   UnitFuncoesComuns.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitFuncoesComuns.Controller.pas',
   UnitLogin.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitLogin.Controller.pas',
-  UnitDataset.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitDataset.Controller.pas';
+  UnitDataset.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitDataset.Controller.pas',
+  UnitGrades.Model in '..\Shared\Model\Grades\UnitGrades.Model.pas';
 
 var
 	LLogFileConfig: THorseLoggerConsoleConfig;
@@ -90,6 +94,9 @@ begin
 		TMesasController.Registrar;
 		TComandasController.Registrar;
 		TProdutosController.Registrar;
+    TEstoqueController.Registrar;
+    TFluxoCaixaController.Registrar;
+    TRelatoriosController.Registrar;
 		TComplementosController.Registrar;
 		TFuncoesComunsController.Router;
 		TVendasController.Router;

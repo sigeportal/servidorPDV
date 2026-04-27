@@ -6,8 +6,8 @@
         <MainSource>ServidorConsole.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Release</Config>
-        <Platform Condition="'$(Platform)'==''">Linux64</Platform>
-        <TargetedPlatforms>129</TargetedPlatforms>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>Console</AppType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
@@ -119,6 +119,9 @@
         <DCCReference Include="..\Shared\Controllers\Complementos.Controller.pas"/>
         <DCCReference Include="..\Shared\Controllers\Mesas.Controller.pas"/>
         <DCCReference Include="..\Shared\Controllers\Produtos.Controller.pas"/>
+        <DCCReference Include="..\Shared\Controllers\Estoque.Controller.pas"/>
+        <DCCReference Include="..\Shared\Controllers\FluxoCaixa.Controller.pas"/>
+        <DCCReference Include="..\Shared\Controllers\Relatorios.Controller.pas"/>
         <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Database\UnitDatabase.pas"/>
         <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitConstants.pas"/>
         <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Utils\UnitFuncoesComuns.pas"/>
@@ -150,9 +153,6 @@
         <DCCReference Include="..\Shared\Controllers\UnitControleSenhas.Controller.pas"/>
         <DCCReference Include="..\Shared\Model\CpAdicionais\UnitCpAdicionais.Model.pas"/>
         <DCCReference Include="..\Shared\Model\CpOpcoes\UnitCpOpcoes.Model.pas"/>
-        <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitFuncoesComuns.Controller.pas"/>
-        <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitLogin.Controller.pas"/>
-        <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitDataset.Controller.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

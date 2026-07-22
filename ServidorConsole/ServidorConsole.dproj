@@ -6,8 +6,8 @@
         <MainSource>ServidorConsole.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Release</Config>
-        <Platform Condition="'$(Platform)'==''">Win32</Platform>
-        <TargetedPlatforms>1</TargetedPlatforms>
+        <Platform Condition="'$(Platform)'==''">Linux64</Platform>
+        <TargetedPlatforms>129</TargetedPlatforms>
         <AppType>Console</AppType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
@@ -91,6 +91,8 @@
         <VerInfo_Locale>1033</VerInfo_Locale>
         <Manifest_File>(None)</Manifest_File>
         <DCC_Define>PORTALORM;$(DCC_Define)</DCC_Define>
+        <Debugger_IncludeSystemVars>true</Debugger_IncludeSystemVars>
+        <Debugger_EnvVars>CAMINHO_BD=d:\PROJETOS\Lanchonete\Dados\REI_DA_GARAPA\PRINCIPAL.FDB;$(Debugger_EnvVars)</Debugger_EnvVars>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -108,6 +110,9 @@
         <DCC_Define>PORTALORM;$(DCC_Define)</DCC_Define>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <Manifest_File>(None)</Manifest_File>
+        <DCC_ExeOutput>./dist/DEV</DCC_ExeOutput>
+        <Debugger_IncludeSystemVars>true</Debugger_IncludeSystemVars>
+        <Debugger_EnvVars>CAMINHO_BD=D:\PROJETOS\Lanchonete\Dados\PASTELARIA_DOS_AMIGOS\PRINCIPAL.FDB;$(Debugger_EnvVars)</Debugger_EnvVars>
     </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
@@ -119,6 +124,7 @@
         <DCCReference Include="..\Shared\Controllers\Complementos.Controller.pas"/>
         <DCCReference Include="..\Shared\Controllers\Mesas.Controller.pas"/>
         <DCCReference Include="..\Shared\Controllers\Produtos.Controller.pas"/>
+        <DCCReference Include="..\Shared\Controllers\Produtos.Admin.Controller.pas"/>
         <DCCReference Include="..\Shared\Controllers\Estoque.Controller.pas"/>
         <DCCReference Include="..\Shared\Controllers\FluxoCaixa.Controller.pas"/>
         <DCCReference Include="..\Shared\Controllers\Relatorios.Controller.pas"/>
@@ -146,6 +152,8 @@
         <DCCReference Include="..\Shared\Model\Niveis\UnitNiveis.Model.pas"/>
         <DCCReference Include="..\Shared\Model\Clientes\UnitClientes.Model.pas"/>
         <DCCReference Include="..\Shared\Model\Clientes\UnitClientes.Controller.pas"/>
+        <DCCReference Include="..\Shared\Model\Despesas\UnitDespesas.Model.pas"/>
+        <DCCReference Include="..\Shared\Model\Despesas\UnitDespesas.Controller.pas"/>
         <DCCReference Include="..\Shared\Model\VeAdicionais\UnitVeAdicionais.Model.pas"/>
         <DCCReference Include="..\Shared\Model\VeOpcoes\UnitVeOpcoes.Model.pas"/>
         <DCCReference Include="..\..\..\FormsComuns\Classes\Empresa\UnitEmpresa.Model.pas"/>
@@ -153,6 +161,12 @@
         <DCCReference Include="..\Shared\Controllers\UnitControleSenhas.Controller.pas"/>
         <DCCReference Include="..\Shared\Model\CpAdicionais\UnitCpAdicionais.Model.pas"/>
         <DCCReference Include="..\Shared\Model\CpOpcoes\UnitCpOpcoes.Model.pas"/>
+        <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitFuncoesComuns.Controller.pas"/>
+        <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitLogin.Controller.pas"/>
+        <DCCReference Include="..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitDataset.Controller.pas"/>
+        <DCCReference Include="..\Shared\Model\Grades\UnitGrades.Model.pas"/>
+        <DCCReference Include="..\Shared\Model\Adicionais\UnitAdicionais.Model.pas"/>
+        <DCCReference Include="..\Shared\Model\Tamanhos\UnitTamanhos.Model.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

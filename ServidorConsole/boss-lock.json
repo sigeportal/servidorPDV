@@ -36,39 +36,39 @@
 		},
 		"github.com/hashload/horse": {
 			"name": "horse",
-			"version": "3.1.9",
-			"hash": "af2a700482b1c0e000da2eabfe79cf09",
+			"version": "3.2.0",
+			"hash": "26b4ef59d5b866b3f4f1a3ac67d82d70",
 			"artifacts": {},
 			"failed": false,
 			"changed": false
 		},
 		"github.com/hashload/horse-cors": {
 			"name": "horse-cors",
-			"version": "1.0.7",
-			"hash": "d15fed3280e380f2bc6918da71772b7a",
+			"version": "1.0.8",
+			"hash": "b9808434f0df40ea73fdbce715b19770",
 			"artifacts": {},
 			"failed": false,
 			"changed": false
 		},
 		"github.com/hashload/horse-jwt": {
 			"name": "horse-jwt",
-			"version": "2.0.18",
-			"hash": "ab2ea82e7cd98a8ee5bab17e5ab9a986",
+			"version": "2.0.20",
+			"hash": "f89e1267ee7b9cc723bfc1aa39276d21",
 			"artifacts": {},
 			"failed": false,
 			"changed": false
 		},
 		"github.com/hashload/horse-logger": {
 			"name": "horse-logger",
-			"version": "2.0.9",
-			"hash": "10929e7b892e8491c47a30b3616112d8",
+			"version": "2.0.10",
+			"hash": "e68ca84d8c4272744c753fde22984488",
 			"artifacts": {},
 			"failed": false,
 			"changed": false
 		},
 		"github.com/hashload/horse-logger-provider-console": {
 			"name": "horse-logger-provider-console",
-			"version": "1.0.9",
+			"version": "1.0.10",
 			"hash": "d8a9d0ed0d0cd97ea0b6f3bd65f62bc6",
 			"artifacts": {},
 			"failed": false,
@@ -76,8 +76,8 @@
 		},
 		"github.com/hashload/jhonson": {
 			"name": "jhonson",
-			"version": "1.2.1",
-			"hash": "dda7dc5ade9e50207be4485c5045e47b",
+			"version": "1.2.3",
+			"hash": "6bc9464bd2451521bbb313f48b679419",
 			"artifacts": {},
 			"failed": false,
 			"changed": false
@@ -108,16 +108,16 @@
 		},
 		"https://github.com/cachopaweb/factory-connections": {
 			"name": "factory-connections",
-			"version": "v1.0.3",
-			"hash": "dd2506e1ff0fd0b4e07f0347972f12f6",
+			"version": "v1.0.5",
+			"hash": "e776a8dd6fbb9160c13e3a37a9a8624a",
 			"artifacts": {},
 			"failed": false,
 			"changed": false
 		},
 		"https://github.com/cachopaweb/portalorm": {
 			"name": "portalorm",
-			"version": "v1.0.30",
-			"hash": "148bbd20c26225f66c2b855a7f9ec0a1",
+			"version": "v1.1.3",
+			"hash": "6ae57d33d914ef7e0560ce72f5f59bfe",
 			"artifacts": {},
 			"failed": false,
 			"changed": false

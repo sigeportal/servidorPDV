@@ -15,7 +15,7 @@
 		"github.com/hashload/horse-logger": "^2.0.2",
 		"github.com/hashload/horse-logger-provider-console": "^1.0.3",
 		"github.com/viniciussanchez/dataset-serialize": "^v2.2.1",
-		"https://github.com/cachopaweb/portalorm": "^1.0.1",
+		"https://github.com/cachopaweb/portalorm": "^v1.0.30",
 		"https://github.com/gabrielbaltazar/gbswagger": "^3.1.0"
 	}
 }

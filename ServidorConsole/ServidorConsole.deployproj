@@ -1,0 +1,42 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Condition="Exists('$(BDS)\bin\CodeGear.Deployment.targets')" Project="$(BDS)\bin\CodeGear.Deployment.targets"/>
+    <ProjectExtensions>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <PropertyGroup/>
+    <ItemGroup Condition="'$(Platform)'=='Win32'">
+        <DeployFile Include="Win32\Release\ServidorConsole.exe" Condition="'$(Config)'=='Release'">
+            <RemoteDir>ServidorConsole\</RemoteDir>
+            <RemoteName>ServidorConsole.exe</RemoteName>
+            <DeployClass>ProjectOutput</DeployClass>
+            <Operation>0</Operation>
+            <LocalCommand/>
+            <RemoteCommand/>
+            <Overwrite>True</Overwrite>
+            <Required>True</Required>
+        </DeployFile>
+        <DeployFile Include="Win32\Debug\ServidorConsole.exe" Condition="'$(Config)'=='Debug'">
+            <RemoteDir>ServidorConsole\</RemoteDir>
+            <RemoteName>ServidorConsole.exe</RemoteName>
+            <DeployClass>ProjectOutput</DeployClass>
+            <Operation>0</Operation>
+            <LocalCommand/>
+            <RemoteCommand/>
+            <Overwrite>True</Overwrite>
+            <Required>True</Required>
+        </DeployFile>
+    </ItemGroup>
+    <ItemGroup Condition="'$(Platform)'=='Linux64'">
+        <DeployFile Include="dist\ServidorConsole" Condition="'$(Config)'=='Release'">
+            <RemoteDir>ServidorConsole\</RemoteDir>
+            <RemoteName>ServidorConsole</RemoteName>
+            <DeployClass>ProjectOutput</DeployClass>
+            <Operation>1</Operation>
+            <LocalCommand/>
+            <RemoteCommand/>
+            <Overwrite>True</Overwrite>
+            <Required>True</Required>
+        </DeployFile>
+    </ItemGroup>
+    <ItemGroup Condition="'$(Platform)'=='Win64'"/>
+</Project>

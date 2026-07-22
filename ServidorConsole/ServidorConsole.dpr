@@ -19,6 +19,7 @@ uses
   Complementos.Controller in '..\Shared\Controllers\Complementos.Controller.pas',
   Mesas.Controller in '..\Shared\Controllers\Mesas.Controller.pas',
   Produtos.Controller in '..\Shared\Controllers\Produtos.Controller.pas',
+  Produtos.Admin.Controller in '..\Shared\Controllers\Produtos.Admin.Controller.pas',
   Estoque.Controller in '..\Shared\Controllers\Estoque.Controller.pas',
   FluxoCaixa.Controller in '..\Shared\Controllers\FluxoCaixa.Controller.pas',
   Relatorios.Controller in '..\Shared\Controllers\Relatorios.Controller.pas',
@@ -46,6 +47,8 @@ uses
   UnitNiveis.Model in '..\Shared\Model\Niveis\UnitNiveis.Model.pas',
   UnitClientes.Model in '..\Shared\Model\Clientes\UnitClientes.Model.pas',
   UnitClientes.Controller in '..\Shared\Model\Clientes\UnitClientes.Controller.pas',
+  UnitDespesas.Model in '..\Shared\Model\Despesas\UnitDespesas.Model.pas',
+  UnitDespesas.Controller in '..\Shared\Model\Despesas\UnitDespesas.Controller.pas',
   UnitVeAdicionais.Model in '..\Shared\Model\VeAdicionais\UnitVeAdicionais.Model.pas',
   UnitVeOpcoes.Model in '..\Shared\Model\VeOpcoes\UnitVeOpcoes.Model.pas',
   UnitEmpresa.Model in '..\..\..\FormsComuns\Classes\Empresa\UnitEmpresa.Model.pas',
@@ -56,7 +59,9 @@ uses
   UnitFuncoesComuns.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitFuncoesComuns.Controller.pas',
   UnitLogin.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitLogin.Controller.pas',
   UnitDataset.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitDataset.Controller.pas',
-  UnitGrades.Model in '..\Shared\Model\Grades\UnitGrades.Model.pas';
+  UnitGrades.Model in '..\Shared\Model\Grades\UnitGrades.Model.pas',
+  UnitAdicionais.Model in '..\Shared\Model\Adicionais\UnitAdicionais.Model.pas',
+  UnitTamanhos.Model in '..\Shared\Model\Tamanhos\UnitTamanhos.Model.pas';
 
 var
 	LLogFileConfig: THorseLoggerConsoleConfig;
@@ -94,6 +99,7 @@ begin
 		TMesasController.Registrar;
 		TComandasController.Registrar;
 		TProdutosController.Registrar;
+		TProdutosAdminController.Registrar;
     TEstoqueController.Registrar;
     TFluxoCaixaController.Registrar;
     TRelatoriosController.Registrar;
@@ -101,14 +107,17 @@ begin
 		TFuncoesComunsController.Router;
 		TVendasController.Router;
 		TClientesController.Router;
+		TDespesasController.Router;
 		TEmpresaController.Router;
 		TControleSenhasController.Router;
+    TDespesasController.Router;
 
 		// start server
 		THorse.Listen(ObterPorta,
 			procedure
 			begin
 				Writeln('Servidor rodando na porta', ': ', THorse.Port.ToString);
+        Writeln('BD: '+TConstants.BancoDados);
 				Readln;
 			end);
 	finally

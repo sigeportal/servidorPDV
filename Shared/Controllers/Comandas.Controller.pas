@@ -623,29 +623,29 @@ begin
       QueryComplementos.DataSet.Next;
     end;
     Item.AddPair('complementos', Complementos);
-     //Opcoes niveis
-      QueryOpcoesNiveis := TDatabase.Query;
-      QueryOpcoesNiveis.Clear;
-      QueryOpcoesNiveis.Add('SELECT CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, CO_VALOR, CO_NOME, CO_ATIVO, CO_SELECIONADO, CO_OP');
-      QueryOpcoesNiveis.Add('FROM CP_OPCOES WHERE CO_CP = :COM_PRO ORDER BY CO_CODIGO');    
-      QueryOpcoesNiveis.AddParam('COM_PRO', Query.DataSet.FieldByName('CP_CODIGO').AsInteger);
-      QueryOpcoesNiveis.Open;
-      Opcoes := TJSONArray.Create;
-      QueryOpcoesNiveis.DataSet.First;
-      while not QueryOpcoesNiveis.DataSet.Eof do
-      begin
-        Opcao := TJSONObject.Create;
-        Opcao.AddPair('codigo', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_OP').AsInteger));
-        Opcao.AddPair('nome', QueryOpcoesNiveis.DataSet.FieldByName('CO_NOME').AsString);
-        Opcao.AddPair('valorAdicional', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_VALOR').AsCurrency));
-        Opcao.AddPair('ativo', TJSONBool.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_ATIVO').AsString.Contains('S')));
-        Opcao.AddPair('ativoStr', QueryOpcoesNiveis.DataSet.FieldByName('CO_ATIVO').AsString);
-        Opcao.AddPair('codNivel', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_NI').AsInteger));
-        Opcao.AddPair('selecionado', TJSONBool.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_SELECIONADO').AsString.Contains('S')));
-        Opcao.AddPair('quantidade', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_QUANTIDADE').AsFloat));
-        Opcoes.AddElement(Opcao);
-        QueryOpcoesNiveis.DataSet.Next;
-      end;
+    //Opcoes niveis
+    QueryOpcoesNiveis := TDatabase.Query;
+    QueryOpcoesNiveis.Clear;
+    QueryOpcoesNiveis.Add('SELECT CO_CODIGO, CO_CP, CO_NI, CO_QUANTIDADE, CO_VALOR, CO_NOME, CO_ATIVO, CO_SELECIONADO, CO_OP');
+    QueryOpcoesNiveis.Add('FROM CP_OPCOES WHERE CO_CP = :COM_PRO ORDER BY CO_CODIGO');    
+    QueryOpcoesNiveis.AddParam('COM_PRO', Query.DataSet.FieldByName('CP_CODIGO').AsInteger);
+    QueryOpcoesNiveis.Open;
+    Opcoes := TJSONArray.Create;
+    QueryOpcoesNiveis.DataSet.First;
+    while not QueryOpcoesNiveis.DataSet.Eof do
+    begin
+      Opcao := TJSONObject.Create;
+      Opcao.AddPair('codigo', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_OP').AsInteger));
+      Opcao.AddPair('nome', QueryOpcoesNiveis.DataSet.FieldByName('CO_NOME').AsString);
+      Opcao.AddPair('valorAdicional', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_VALOR').AsCurrency));
+      Opcao.AddPair('ativo', TJSONBool.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_ATIVO').AsString.Contains('S')));
+      Opcao.AddPair('ativoStr', QueryOpcoesNiveis.DataSet.FieldByName('CO_ATIVO').AsString);
+      Opcao.AddPair('codNivel', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_NI').AsInteger));
+      Opcao.AddPair('selecionado', TJSONBool.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_SELECIONADO').AsString.Contains('S')));
+      Opcao.AddPair('quantidade', TJSONNumber.Create(QueryOpcoesNiveis.DataSet.FieldByName('CO_QUANTIDADE').AsFloat));
+      Opcoes.AddElement(Opcao);
+      QueryOpcoesNiveis.DataSet.Next;
+    end;
     Item.AddPair('OpcoesNiveis', Opcoes);
     Itens.AddElement(Item);
     Query.DataSet.Next;
@@ -802,6 +802,16 @@ begin
   THorse.Get('/v1/comandas/item/:codigo', GetItemComPro);
   THorse.Delete('/v1/comandas/:codigo/itens', DeletarItemComanda);
   THorse.Delete('/v1/comandas/:codigo/complementos', DeletarComplementos);
+  //compatibilidade
+  THorse.Get('/Comandas', Get);
+  THorse.Get('/Comandas/:codigo', GetPorCodigo);
+  THorse.Post('/Comandas', Post);
+  THorse.Put('/Comandas/:codigo/encerrar', EncerrarComanda);
+  THorse.Put('/Comandas/:codigo/status/:status', AtualizarEstado);
+  THorse.Put('/Comandas/:codigo', AtualizarComanda);
+  THorse.Get('/Comandas/item/:codigo', GetItemComPro);
+  THorse.Delete('/Comandas/:codigo/itens', DeletarItemComanda);
+  THorse.Delete('/Comandas/:codigo/complementos', DeletarComplementos);
 end;
 
 initialization

@@ -8,22 +8,38 @@ uses
   Horse.GBSwagger,
   System.SysUtils,
   System.JSON,
-  UnitConnection.Model.Interfaces;
+   System.DateUtils,
+  UnitConnection.Model.Interfaces, UnitCaixa.Model;
 
 type
+	TBodyCaixa = class
+  private
+    Fpdv: integer;
+    Ffun: integer;
+  public
+  	property pdv: integer read Fpdv write Fpdv;
+    property fun: integer read Ffun write Ffun;
+  end;
+  
   TFluxoCaixaController = class
   private
     class function SuccessResponse(AData: TJSONValue; const AMessage: string = ''): TJSONObject; static;
     class function ErrorResponse(const AMessage, ACode: string; const ADetails: string = ''): TJSONObject; static;
+    class function ParseDateParam(const AValue: string;
+      out ADate: TDate): Boolean; static;
   public
     class procedure Registrar;
     class procedure Listar(Req: THorseRequest; Res: THorseResponse; Next: TProc);
     class procedure Lancar(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+    class procedure StatusCaixa(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+    class procedure AbrirCaixa(Req: THorseRequest; Res: THorseResponse);
+    class procedure FecharCaixa(Req: THorseRequest; Res: THorseResponse);
   end;
 
 implementation
 
 uses
+	UnitTabela.Helpers,
   UnitDatabase,
   UnitFunctions;
 
@@ -42,6 +58,66 @@ begin
   else
     Result.AddPair('data', TJSONNull.Create);
   Result.AddPair('meta', Meta);
+end;
+
+class procedure TFluxoCaixaController.AbrirCaixa(Req: THorseRequest;
+  Res: THorseResponse);
+var
+  Dinheiro, Cheque, Cartao: currency;
+  UltimoCodCaixa: integer;
+  Query: iQuery;
+  PDV: Integer;
+  Caixa: TCaixa;
+  FUN: Integer;
+  CodBalanco: Integer;
+  dados: TJSONObject;
+begin
+	dados := Req.Body<TJSONObject>;
+	if not dados.TryGetValue<integer>('pdv', PDV) then
+  	raise Exception.Create('PDV não informado!');
+  if not dados.TryGetValue<integer>('fun', FUN) then
+  	raise Exception.Create('Funcionario não informado!');
+	Query := TDatabase.Query;
+  //balanco
+  Query.Open('select BAL_CODIGO from BALANCO ORDER BY BAL_CODIGO');
+  Query.DataSet.Last;
+  if not Query.DataSet.IsEmpty then
+  	CodBalanco := Query.DataSet.FieldByName('BAL_CODIGO').AsInteger;
+  //BUSCA DADOS DO ULTIMO CAIXA
+  Query.Clear;
+  Query.Add('SELECT CAI_CODIGO, CAI_VALORD, CAI_VALORC, CAI_VALOR_CARTAO, CAI_HORAF FROM CAIXA WHERE CAI_CODIGO = (SELECT MAX(CAI_CODIGO) FROM CAIXA WHERE CAI_PDV = :PDV)');
+	Query.AddParam('PDV', PDV);
+  Query.Open();
+  if not Query.DataSet.IsEmpty then
+  begin
+  	//caixa anterior ainda não fechado
+  	if Query.DataSet.FieldByName('CAI_HORAF').IsNull then
+    begin    
+    	Res.Send<TJSONObject>(TJSONObject.Create.AddPair('msg', 'Por favor, feche o caixa!'));
+      Exit;
+    end;
+    UltimoCodCaixa := Query.DataSet.FieldByName('CAI_CODIGO').AsInteger;
+    Dinheiro := Query.DataSet.FieldByName('CAI_VALORD').AsCurrency;
+    Cheque   := Query.DataSet.FieldByName('CAI_VALORC').AsCurrency;
+    Cartao   := Query.DataSet.FieldByName('CAI_VALOR_CARTAO').AsCurrency;
+  end;
+  Caixa := TCaixa.Create(TDatabase.Connection);
+  try
+    Caixa.Codigo       := IncrementaGenerator('GEN_CAI');
+    Caixa.Fun          := FUN;
+    Caixa.Datai        := Date;
+    Caixa.Horai        := Time;
+    Caixa.Valori       := Dinheiro + Cheque;
+    Caixa.Valord       := Dinheiro;
+    Caixa.Valorc       := Cheque;
+    Caixa.Valor_cartao := Cartao;
+    Caixa.Bal          := CodBalanco;
+    Caixa.Pdv          := PDV;
+    Caixa.SalvaNoBanco();
+    Res.Send<TJSONObject>(Caixa.ToJsonObject).Status(201);
+  finally
+    Caixa.DisposeOf;
+  end;
 end;
 
 class function TFluxoCaixaController.ErrorResponse(const AMessage, ACode, ADetails: string): TJSONObject;
@@ -63,6 +139,128 @@ begin
   Result.AddPair('error', ErrorObj);
 end;
 
+class procedure TFluxoCaixaController.StatusCaixa(Req: THorseRequest;
+  Res: THorseResponse; Next: TProc);
+var
+  Query: iQuery;
+  DataObj: TJSONObject;
+  PDV: Integer;
+  Aberto: Boolean;
+begin
+  PDV := 1;
+  if Req.Query.ContainsKey('pdv') then
+    PDV := StrToIntDef(Req.Query.Items['pdv'], 1);
+
+  Query := TDatabase.Query;
+  DataObj := TJSONObject.Create;
+  try
+    Query.Clear;
+    Query.Add('SELECT CAI_CODIGO, CAI_PDV, CAI_DATAI, CAI_HORAI, CAI_DATAF, CAI_HORAF');
+    Query.Add('FROM CAIXA');
+    Query.Add('WHERE CAI_CODIGO = (SELECT MAX(CAI_CODIGO) FROM CAIXA WHERE CAI_PDV = :PDV)');
+    Query.Add('ORDER BY CAI_CODIGO DESC');
+    Query.AddParam('PDV', PDV);
+    Query.Open;
+
+    Aberto := (not Query.DataSet.IsEmpty) and
+      Query.DataSet.FieldByName('CAI_HORAF').IsNull;
+
+    DataObj.AddPair('pdv', TJSONNumber.Create(PDV));
+    DataObj.AddPair('aberto', TJSONBool.Create(Aberto));
+
+    if not Query.DataSet.IsEmpty then
+    begin
+      DataObj.AddPair('caixa', TJSONNumber.Create(Query.DataSet.FieldByName('CAI_CODIGO').AsInteger));
+      DataObj.AddPair('data_abertura', FormatDateTime('yyyy-mm-dd', Query.DataSet.FieldByName('CAI_DATAI').AsDateTime));
+      DataObj.AddPair('hora_abertura', FormatDateTime('hh:nn:ss', Query.DataSet.FieldByName('CAI_HORAI').AsDateTime));
+    end
+    else
+      DataObj.AddPair('caixa', TJSONNull.Create);
+
+    Res.Status(THTTPStatus.OK)
+      .Send<TJSONObject>(SuccessResponse(DataObj, 'Status do caixa carregado com sucesso.'));
+  except
+    on E: Exception do
+      Res.Status(THTTPStatus.InternalServerError)
+        .Send<TJSONObject>(ErrorResponse('Falha ao consultar status do caixa.', 'INTERNAL_ERROR', E.Message));
+  end;
+end;
+class procedure TFluxoCaixaController.FecharCaixa(Req: THorseRequest;
+  Res: THorseResponse);
+var
+  Dinheiro, Cheque, Cartao: currency;
+  UltimoCodCaixa: integer;
+  Query: iQuery;
+  PDV: Integer;
+  Caixa: TCaixa;
+  FUN: Integer;
+  CodBalanco: Integer;
+  dados: TJSONObject;
+begin
+ 	dados := Req.Body<TJSONObject>;
+	if not dados.TryGetValue<integer>('pdv', PDV) then
+  	raise Exception.Create('PDV não informado!');
+  if not dados.TryGetValue<integer>('fun', FUN) then
+  	raise Exception.Create('Funcionario não informado!');
+	Query := TDatabase.Query;
+  //balanco
+  Query.Open('select BAL_CODIGO from BALANCO ORDER BY BAL_CODIGO');
+  Query.DataSet.Last;
+  if not Query.DataSet.IsEmpty then
+  	CodBalanco := Query.DataSet.FieldByName('BAL_CODIGO').AsInteger;
+  //CAIXA
+  Query.Clear;
+  Query.Add('SELECT CAI_CODIGO, CAI_VALORD, CAI_VALORC, CAI_VALOR_CARTAO, CAI_HORAF FROM CAIXA WHERE CAI_CODIGO = (SELECT MAX(CAI_CODIGO) FROM CAIXA WHERE CAI_PDV = :PDV)');
+	Query.AddParam('PDV', PDV);
+  Query.Open();
+  if not Query.DataSet.IsEmpty then
+  begin
+  	//caixa anterior ainda não fechado
+  	if not Query.DataSet.FieldByName('CAI_HORAF').IsNull then
+    begin    
+    	Res.Send<TJSONObject>(TJSONObject.Create.AddPair('msg', 'Por favor, abra o caixa!'));
+      Exit;
+    end;
+    UltimoCodCaixa := Query.DataSet.FieldByName('CAI_CODIGO').AsInteger;
+    Dinheiro := Query.DataSet.FieldByName('CAI_VALORD').AsCurrency;
+    Cheque   := Query.DataSet.FieldByName('CAI_VALORC').AsCurrency;
+    Cartao   := Query.DataSet.FieldByName('CAI_VALOR_CARTAO').AsCurrency;
+    Caixa := TCaixa.Create(TDatabase.Connection);
+    Caixa.BuscaDadosTabela(Query.DataSet.FieldByName('CAI_CODIGO').AsInteger);
+  	try
+      Caixa.Fun          := FUN;
+      Caixa.Dataf        := Date;
+      Caixa.Horaf        := Time;
+      Caixa.Bal          := CodBalanco;
+      Caixa.SalvaNoBanco();
+      Res.Send<TJSONObject>(Caixa.ToJsonObject);
+    finally
+      Caixa.DisposeOf;
+    end;
+  end else
+  	raise Exception.Create('PDV não encontrado! Por favor, abra o caixa!');
+end;
+
+class function TFluxoCaixaController.ParseDateParam(const AValue: string; out ADate: TDate): Boolean;
+var
+  DateTimeValue: TDateTime;
+  FS: TFormatSettings;
+begin
+  if TryISO8601ToDate(AValue, DateTimeValue, False) then
+  begin
+    ADate := DateOf(DateTimeValue);
+    Exit(True);
+  end;
+
+  FS := TFormatSettings.Create;
+  FS.DateSeparator := '/';
+  FS.ShortDateFormat := 'dd/mm/yyyy';
+
+  Result := TryStrToDate(AValue, DateTimeValue, FS);
+  if Result then
+    ADate := DateOf(DateTimeValue);
+end;
+
 class procedure TFluxoCaixaController.Listar(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 var
   Query: iQuery;
@@ -80,11 +278,22 @@ begin
     DataInicio := Date - 7;
     DataFim := Date;
     PDV := 1;
+    if Req.Query.ContainsKey('dataInicio') and
+     (not ParseDateParam(Req.Query.Items['dataInicio'], DataInicio)) then
+    begin
+      Res.Status(THTTPStatus.BadRequest)
+        .Send<TJSONObject>(ErrorResponse('Parametro dataInicio invalido. Use yyyy-mm-dd.', 'VALIDATION_ERROR'));
+      Exit;
+    end;
 
-    if Req.Query.ContainsKey('dataInicio') then
-      DataInicio := StrToDate(Req.Query.Items['dataInicio']);
-    if Req.Query.ContainsKey('dataFim') then
-      DataFim := StrToDate(Req.Query.Items['dataFim']);
+    if Req.Query.ContainsKey('dataFim') and
+       (not ParseDateParam(Req.Query.Items['dataFim'], DataFim)) then
+    begin
+      Res.Status(THTTPStatus.BadRequest)
+        .Send<TJSONObject>(ErrorResponse('Parametro dataFim invalido. Use yyyy-mm-dd.', 'VALIDATION_ERROR'));
+      Exit;
+    end;
+    
     if Req.Query.ContainsKey('pdv') then
       PDV := Req.Query.Items['pdv'].ToInteger;
 
@@ -94,7 +303,7 @@ begin
     Query.Add('COALESCE(C.CAI_PDV, 0) CAI_PDV');
     Query.Add('FROM MOVIMENTACOES M');
     Query.Add('LEFT JOIN CAIXA C ON C.CAI_CODIGO = M.MOV_CAI');
-    Query.Add('WHERE M.MOV_CON = 0 AND M.MOV_DATA BETWEEN :DATA_INI AND :DATA_FIM');
+    Query.Add('WHERE M.MOV_CON = 0 AND M.MOV_DATA BETWEEN :DATA_INI AND :DATA_FIM AND MOV_ESTADO = ''A''');
     Query.Add('  AND (:PDV_FILTRO = 0 OR C.CAI_PDV = :PDV_VALOR)');
     Query.Add('ORDER BY M.MOV_DATAHORA DESC, M.MOV_CODIGO DESC');
     Query.AddParam('DATA_INI', FormatDateTime('dd.mm.yyyy', DataInicio));
@@ -275,6 +484,9 @@ class procedure TFluxoCaixaController.Registrar;
 begin
   THorse.Get('/v1/fluxo-caixa', Listar);
   THorse.Post('/v1/fluxo-caixa/lancamentos', Lancar);
+  THorse.Get('/v1/caixa/status', StatusCaixa);
+  THorse.Post('/v1/caixa/abrir', AbrirCaixa);
+  THorse.Post('/v1/caixa/fechar', FecharCaixa);
 end;
 
 initialization
@@ -296,6 +508,35 @@ initialization
         .AddResponse(500).&End
       .&End
     .&End
+    .Path('caixa/status')
+      .Tag('caixa')
+      .GET('Status Caixa', 'Consulta se o caixa do PDV esta aberto')
+        .AddResponse(200, 'Operacao bem sucedida').&End
+        .AddResponse(400).&End
+        .AddResponse(500).&End
+      .&End
+    .&End
+    .Path('caixa/abrir')
+      .Tag('caixa')
+      .POST('Abrir Caixa', 'Registra a abertura de caixa')
+      	.AddParamBody('Dados abertura', 'abertura de caixa').Required(True).Schema(TBodyCaixa).&End
+        .AddResponse(201, 'Created').&End
+        .AddResponse(400).&End
+        .AddResponse(409).&End
+        .AddResponse(500).&End
+      .&End
+    .&End
+    .Path('caixa/fechar')
+      .Tag('caixa')
+      .POST('Fechar Caixa', 'Registra o fechamento de caixa')
+      	.AddParamBody('Dados fechamento', 'fechamento de caixa').Required(True).Schema(TBodyCaixa).&End
+        .AddResponse(201, 'Created').&End
+        .AddResponse(400).&End
+        .AddResponse(409).&End
+        .AddResponse(500).&End
+      .&End
+    .&End
   .&End;
 
 end.
+

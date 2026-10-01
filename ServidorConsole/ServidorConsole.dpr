@@ -100,9 +100,9 @@ begin
 		TComandasController.Registrar;
 		TProdutosController.Registrar;
 		TProdutosAdminController.Registrar;
-    TEstoqueController.Registrar;
-    TFluxoCaixaController.Registrar;
-    TRelatoriosController.Registrar;
+		TEstoqueController.Registrar;
+		TFluxoCaixaController.Registrar;
+		TRelatoriosController.Registrar;
 		TComplementosController.Registrar;
 		TFuncoesComunsController.Router;
 		TVendasController.Router;
@@ -110,14 +110,13 @@ begin
 		TDespesasController.Router;
 		TEmpresaController.Router;
 		TControleSenhasController.Router;
-    TDespesasController.Router;
 
 		// start server
 		THorse.Listen(ObterPorta,
 			procedure
 			begin
 				Writeln('Servidor rodando na porta', ': ', THorse.Port.ToString);
-        Writeln('BD: '+TConstants.BancoDados);
+				Writeln('BD: '+TConstants.BancoDados);
 				Readln;
 			end);
 	finally

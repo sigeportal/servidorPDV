@@ -38,7 +38,7 @@ type
     FNome_cliente: string;
     FId_pedido: string;
     FItens: TArray<TVenEst>;
-    FPedFat: TPedFat;
+    FPedFat: TPedFatResponse;
 //    procedure SetCodigo(const Value: integer);
   public
     destructor Destroy; override;    
@@ -78,7 +78,7 @@ type
     [TCampo('VEN_ID_PEDIDO', 'VARCHAR(500)')]
     property Id_pedido: string read FId_pedido write FId_pedido;
     property Itens: TArray<TVenEst> read FItens write FItens;
-    property PedFat: TPedFat read FPedFat write FPedFat;
+    property PedFat: TPedFatResponse read FPedFat write FPedFat;
     function Clone: TVendas;
   end;
 

@@ -28,7 +28,7 @@
 		},
 		"github.com/hashload/handle-exception": {
 			"name": "handle-exception",
-			"version": "0.2.0",
+			"version": "0.2.1",
 			"hash": "0890ef500baa3f730bc7bc996051a187",
 			"artifacts": {},
 			"failed": false,
@@ -36,39 +36,39 @@
 		},
 		"github.com/hashload/horse": {
 			"name": "horse",
-			"version": "3.2.0",
-			"hash": "26b4ef59d5b866b3f4f1a3ac67d82d70",
+			"version": "3.3.2",
+			"hash": "d3a1d436c07c6e299997d48ea61cc48b",
 			"artifacts": {},
 			"failed": false,
 			"changed": false
 		},
 		"github.com/hashload/horse-cors": {
 			"name": "horse-cors",
-			"version": "1.0.8",
-			"hash": "b9808434f0df40ea73fdbce715b19770",
+			"version": "1.0.9",
+			"hash": "6d49c6b9b5b7c8cceeecfd3767abeb1f",
 			"artifacts": {},
 			"failed": false,
 			"changed": false
 		},
 		"github.com/hashload/horse-jwt": {
 			"name": "horse-jwt",
-			"version": "2.0.20",
-			"hash": "f89e1267ee7b9cc723bfc1aa39276d21",
+			"version": "2.0.23",
+			"hash": "00d8444451ef13f9cee94d03e58d1301",
 			"artifacts": {},
 			"failed": false,
 			"changed": false
 		},
 		"github.com/hashload/horse-logger": {
 			"name": "horse-logger",
-			"version": "2.0.10",
-			"hash": "e68ca84d8c4272744c753fde22984488",
+			"version": "2.0.11",
+			"hash": "5ad7cb2fc1d8b1bd2208e4dacc9bc528",
 			"artifacts": {},
 			"failed": false,
 			"changed": false
 		},
 		"github.com/hashload/horse-logger-provider-console": {
 			"name": "horse-logger-provider-console",
-			"version": "1.0.10",
+			"version": "1.0.11",
 			"hash": "d8a9d0ed0d0cd97ea0b6f3bd65f62bc6",
 			"artifacts": {},
 			"failed": false,
@@ -76,8 +76,8 @@
 		},
 		"github.com/hashload/jhonson": {
 			"name": "jhonson",
-			"version": "1.2.3",
-			"hash": "6bc9464bd2451521bbb313f48b679419",
+			"version": "1.2.5",
+			"hash": "5a116b8a6832a4ee5f061ef1ae18ebbe",
 			"artifacts": {},
 			"failed": false,
 			"changed": false
@@ -108,8 +108,8 @@
 		},
 		"https://github.com/cachopaweb/factory-connections": {
 			"name": "factory-connections",
-			"version": "v1.0.5",
-			"hash": "e776a8dd6fbb9160c13e3a37a9a8624a",
+			"version": "v1.0.6",
+			"hash": "e8ece0c682fee121a897996155719911",
 			"artifacts": {},
 			"failed": false,
 			"changed": false

@@ -8,6 +8,7 @@ uses
   Classes,
   SysUtils,
   System.Json, UnitVenEst.Model, UnitOperacoes.Strategy.Interfaces,
+  FireDAC.Comp.Client,
   UnitOperacao.Venda;
 
 type
@@ -30,7 +31,10 @@ uses
   UnitFunctions,
   UnitVendas.Model,
   UnitConstants,
-  UnitTabela.Helpers, System.Generics.Collections;
+  UnitTabela.Helpers, System.Generics.Collections, UnitPedFat.Model;
+
+var
+  VendaPostLock: TObject;
 
 class procedure TVendasController.Delete(Req: THorseRequest; Res: THorseResponse);
 var Vendas: TVendas;
@@ -135,37 +139,83 @@ begin
 end;
 
 class procedure TVendasController.Post(Req: THorseRequest; Res: THorseResponse);
-var Vendas: TVendas;
+var 
+	Vendas: TVendas;
   i: Integer;
   OperacaoVenda: iOperacoesStrategy;
+  BancoDados: iConnection;
+  IndiceConexao: Integer;
+  Conexao: TFDConnection;
+  Transacao: TFDTransaction;
+  Resposta: TJSONObject;
 begin
-  Vendas := TVendas.Create(TDatabase.Connection);
-//  Vendas.CriaTabela; 
-  Vendas := Vendas.fromJson<TVendas>(Req.Body);
-  OperacaoVenda := TOperacaoVenda.New;
-  OperacaoVenda.SetOperacao(Vendas);
-  //tratamento para os itens
-  if Assigned(Vendas.Itens) then
-  begin
-    for i := Low(Vendas.Itens) to High(Vendas.Itens) do
-    begin
-      OperacaoVenda.SetItens(Vendas.Itens[i]);
+  TMonitor.Enter(VendaPostLock);
+  try
+  OperacaoVenda := nil;
+  Resposta := nil;
+  Transacao := nil;
+  IndiceConexao := -1;
+  BancoDados := TDatabase.Connection;
+  IndiceConexao := BancoDados.Connected;
+  Conexao := TFDConnection(BancoDados.GetListaConexoes[IndiceConexao]);
+  Transacao := TFDTransaction.Create(nil);
+  try
+    Transacao.Connection := Conexao;
+    Vendas := TVendas.Create(Conexao, Transacao);
+//  Vendas.CriaTabela;
+    Vendas := Vendas.fromJson<TVendas>(Req.Body);
+    Transacao.Options.Params.Clear;
+    Transacao.Options.Params.Add('write');
+    Transacao.Options.Params.Add('read_committed');
+    Transacao.Options.Params.Add('rec_version');
+    Transacao.Options.Params.Add('nowait');
+    Transacao.StartTransaction;
+    try
+      OperacaoVenda := TOperacaoVenda.New;
+      OperacaoVenda.SetContextoTransacao(Conexao, Transacao);
+      OperacaoVenda.SetOperacao(Vendas);
+      //tratamento para os itens
+      if Assigned(Vendas.Itens) then
+      begin
+        for i := Low(Vendas.Itens) to High(Vendas.Itens) do
+        begin
+          OperacaoVenda.SetItens(Vendas.Itens[i]);
+        end;
+      end;
+      //insere operacao Venda
+      OperacaoVenda.SetPed_Fat(TPedFat(Vendas.PedFat));
+      for i := Low(Vendas.PedFat.PFParcelas) to High(Vendas.PedFat.PFParcelas) do
+      begin
+        OperacaoVenda.SetPF_Parcela(Vendas.PedFat.PFParcelas[i]);
+      end;
+      OperacaoVenda.SetTipoFatura(TTipoFatura.Vista);
+      OperacaoVenda.InsereOperacao;
+      OperacaoVenda.InsereItens;
+      OperacaoVenda.InserePedFat;
+      OperacaoVenda.InserePFParcela;
+      OperacaoVenda.InsereFaturamento;
+      Transacao.Commit;
+    except
+      if Transacao.Active then
+        Transacao.Rollback;
+      raise;
     end;
-  end;   
-  //insere operacao Venda    
-  OperacaoVenda.SetPed_Fat(Vendas.PedFat);
-  for i := Low(Vendas.PedFat.PFParcelas) to High(Vendas.PedFat.PFParcelas) do
-  begin
-    OperacaoVenda.SetPF_Parcela(Vendas.PedFat.PFParcelas[i]);
-  end;    
-  OperacaoVenda.SetTipoFatura(TTipoFatura.Vista);
-  OperacaoVenda.InsereOperacao;
-  OperacaoVenda.InsereItens;
-  OperacaoVenda.InserePedFat;
-  OperacaoVenda.InserePFParcela;    
-  OperacaoVenda.InsereFaturamento;
-  ////
-  Res.Send<TJSONObject>(Vendas.ToJsonObject);
+    Resposta := Vendas.ToJsonObject;
+  finally
+    OperacaoVenda := nil;
+    if Assigned(Transacao) then
+    begin
+      if Transacao.Active then
+        Transacao.Rollback;
+      Transacao.DisposeOf;
+    end;
+    if IndiceConexao >= 0 then
+      BancoDados.Disconnected(IndiceConexao);
+  end;
+  Res.Send<TJSONObject>(Resposta);
+  finally
+    TMonitor.Exit(VendaPostLock);
+  end;
 end;
 
 class procedure TVendasController.Put(Req: THorseRequest; Res: THorseResponse);
@@ -199,6 +249,7 @@ begin
 end;
 
 initialization
+  VendaPostLock := TObject.Create;
   Swagger
   .Path('vendas')
       .Tag('Vendas')
@@ -266,5 +317,8 @@ initialization
       .&End
     .&End
   .&End
+
+finalization
+  VendaPostLock.Free;
 
 end.

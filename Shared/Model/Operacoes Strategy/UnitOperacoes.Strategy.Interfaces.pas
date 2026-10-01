@@ -4,7 +4,8 @@ interface
 
 uses
 	UnitPedFat.Model, 
-  UnitPF_Parcela.Model;
+  UnitPF_Parcela.Model,
+  FireDAC.Comp.Client;
   
 type
   {$SCOPEDENUMS ON}
@@ -25,6 +26,7 @@ type
     function SetPed_Fat(Value: TPedFat): iOperacoesStrategy;
     function SetTipoFatura(Value: TTipoFatura): iOperacoesStrategy;
     function SetTipoDescontoCartao(Value: TTipoDescontoCartao): iOperacoesStrategy;
+    function SetContextoTransacao(Connection: TFDConnection; Transaction: TFDTransaction): iOperacoesStrategy;
     function SetOperacao(Value: TObject): iOperacoesStrategy;
     function SetItens(Value: TObject): iOperacoesStrategy;
     function InsereOperacao: iOperacoesStrategy;

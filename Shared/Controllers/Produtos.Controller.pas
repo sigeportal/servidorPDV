@@ -27,6 +27,8 @@ type
     class function BuscaNiveisProduto(CodPro: integer): TJsonArray; static;
     class procedure GetNiveisProduto(Req: THorseRequest; Res: THorseResponse;
       Next: TProc); static;
+    class procedure GetProdutosPorGrupo(Req: THorseRequest;
+      Res: THorseResponse); static;
   end;
 
 implementation
@@ -49,12 +51,12 @@ var
   grupo: Integer;
   Grades: TGrades;
 begin
-	Grades := TGrades.Create(TDatabase.Connection);
-  try
-    Grades.CriaTabela;
-  finally
-    Grades.DisposeOf;
-  end;
+//	Grades := TGrades.Create(TDatabase.Connection);
+//  try
+//    Grades.CriaTabela;
+//  finally
+//    Grades.DisposeOf;
+//  end;
   Query := TDatabase.Query;
   aJson := TJSONArray.Create;
   Query.Clear;
@@ -148,8 +150,12 @@ begin
     if not Query.DataSet.IsEmpty then
     begin
       oJson     := TJSONObject.Create;
-      imgBase64 := ConvertFileToBase64(Query.DataSet.FieldByName('GRU_CAMINHO_IMAGEM').AsString);
-      oJson.AddPair('base64', imgBase64);
+      if FileExists(Query.DataSet.FieldByName('GRU_CAMINHO_IMAGEM').AsString) then
+      begin
+        imgBase64 := ConvertFileToBase64(Query.DataSet.FieldByName('GRU_CAMINHO_IMAGEM').AsString);
+        oJson.AddPair('base64', imgBase64);
+      end;
+      oJson.AddPair('url', Query.DataSet.FieldByName('GRU_CAMINHO_IMAGEM').AsString);      
       Res.Send<TJSONObject>(oJson);
     end;
   end else
@@ -174,9 +180,13 @@ begin
     Query.DataSet.First;
     if not Query.DataSet.IsEmpty then
     begin
-//      imgBase64 := ConvertFileToBase64(Query.DataSet.FieldByName('PRO_CAMINHO_IMAGEM').AsString);
       oJson     := TJSONObject.Create;
       oJson.AddPair('url', Query.DataSet.FieldByName('PRO_CAMINHO_IMAGEM').AsString);
+      if FileExists(Query.DataSet.FieldByName('PRO_CAMINHO_IMAGEM').AsString) then
+      begin
+        imgBase64 := ConvertFileToBase64(Query.DataSet.FieldByName('PRO_CAMINHO_IMAGEM').AsString);
+        oJson.AddPair('base64', imgBase64);
+      end;
       Res.Send<TJSONObject>(oJson);
     end;
   end else
@@ -294,21 +304,94 @@ begin
     Res.Send<TJSONObject>(TJSONObject.Create.AddPair('message', 'Niveis not found')).Status(THTTPStatus.BadRequest);
 end;
 
-class function TProdutosController.BuscaNiveisProduto(CodPro: integer): TJsonArray;
+class function TProdutosController.BuscaNiveisProduto(CodPro: Integer): TJSONArray;
 var
-	Niveis: TNivel;
-  ListaNiveis: TList<TNivel>;
-  i: Integer;
+  Query: iQuery;
+  Nivel: TNivel;
 begin
-	//cria objetos
-  Niveis := TNivel.Create(TDatabase.Connection);
-  Niveis.CriaTabela;
-  //
-	Result := TJSONArray.Create;
-	//busca niveis por produto
-  ListaNiveis := Niveis.PreencheListaWhere<TNivel>('NI_PRO='+CodPro.ToString, 'NI_CODIGO');
-  for i := 0 to Pred(ListaNiveis.Count) do
-	  Result.AddElement(ListaNiveis[i].ToJsonObject); 
+  Result := TJSONArray.Create;
+
+  Query := TDatabase.Query;
+  Query.Add('SELECT NI_CODIGO, NI_TITULO, NI_PRO, NI_DESCRICAO, NI_SELECAO_MIN, NI_SELECAO_MAX ');
+  Query.Add('FROM NIVEIS ');
+  Query.Add('WHERE NI_PRO = :PRO ');
+  Query.Add('ORDER BY NI_CODIGO');
+  Query.AddParam('PRO', CodPro);
+  Query.Open();
+
+  while not Query.DataSet.Eof do
+  begin
+    // Instancia o objeto sem passar pelo SetCodigo lento
+    Nivel := TNivel.Create;
+    try
+      // Atribuição direta dos campos já carregados na Query
+      Nivel.Codigo     := Query.DataSet.FieldByName('NI_CODIGO').AsInteger;
+      Nivel.Titulo      := Query.DataSet.FieldByName('NI_TITULO').AsString;
+      Nivel.CodProduto  := Query.DataSet.FieldByName('NI_PRO').AsInteger;
+      Nivel.Descricao   := Query.DataSet.FieldByName('NI_DESCRICAO').AsString;
+      Nivel.SelecaoMin  := Query.DataSet.FieldByName('NI_SELECAO_MIN').AsInteger;
+      Nivel.SelecaoMax  := Query.DataSet.FieldByName('NI_SELECAO_MAX').AsInteger;
+      // Adiciona o JSON do objeto no Array do resultado
+      // (Assumindo que sua classe base TTabela ou TNivel tenha ToJsonObject)
+      Result.AddElement(Nivel.ToJsonObject); 
+    finally
+      Nivel.Free; // ou DisposeOf se estiver usando ARC em versoes antigas
+    end;
+    Query.DataSet.Next;
+  end;
+end;
+
+class procedure TProdutosController.GetProdutosPorGrupo(Req: THorseRequest; Res: THorseResponse);
+var
+	Produto      : TProdutos;
+	Query        : iQuery;
+	ListaProdutos: TJSONArray;
+	CodGrupo : Integer;
+	Limite       : Integer;
+	Pagina       : Integer;
+	Pular        : Integer;
+	SQL          : string;
+begin
+	if not Req.Params.ContainsKey('id') then
+		raise Exception.Create('Id do grupo nao informado!');
+	CodGrupo  := Req.Params.Items['id'].ToInteger();
+	ListaProdutos := TJSONArray.Create;
+	Query         := TDatabase.Query;
+	
+	// Obtem parametros de paginacao (page e limit)
+	Limite := 10; // Valor padrao
+	Pagina := 1;  // Valor padrao (primeira pagina)
+	
+	if Req.Query.ContainsKey('limit') then
+		Limite := Req.Query.Items['limit'].ToInteger();
+	if Req.Query.ContainsKey('page') then
+		Pagina := Req.Query.Items['page'].ToInteger();
+	
+	// Calcula o SKIP baseado na pagina e limite
+	// Formula: SKIP = (Pagina - 1) * Limite
+	if Pagina < 1 then
+		Pagina := 1;
+	Pular := (Pagina - 1) * Limite;
+	
+	// Monta SQL com paginacao usando FIRST e SKIP do Firebird
+	Query.Clear;
+	if Limite > 0 then
+		SQL := Format('SELECT FIRST %d SKIP %d PRO_CODIGO FROM PRODUTOS WHERE PRO_GRU = :GRUPO ORDER BY PRO_CODIGO', [Limite, Pular])
+	else
+		SQL := 'SELECT PRO_CODIGO FROM PRODUTOS WHERE PRO_GRU = :GRUPO ORDER BY PRO_CODIGO';
+	
+	Query.Add(SQL);
+	Query.AddParam('GRUPO', CodGrupo);
+	Query.Open();
+	Query.Dataset.First;
+	while not Query.Dataset.Eof do
+	begin
+		Produto := TProdutos.Create(TDatabase.Connection);
+		Produto.BuscaDadosTabela(Query.Dataset.FieldByName('PRO_CODIGO').AsInteger);
+		ListaProdutos.Add(Produto.ToJsonObject);
+		Query.Dataset.Next;
+	end;
+	Res.Send<TJSONArray>(ListaProdutos);
 end;
 
 class procedure TProdutosController.Registrar;
@@ -321,6 +404,17 @@ begin
   THorse.Get('/v1/produtos/:codigo/foto', GetFotoProduto);
   THorse.Get('/v1/produtos/grades/:codigo', GetGradesProduto);
   THorse.Get('/v1/produtos/grades/:codigo/:tamanho', GetGradeProduto);
+  THorse.Get('/v1/categorias/produtos/:id', GetProdutosPorGrupo);
+  ///
+  THorse.Get('/Produtos', Get);
+  THorse.Get('/Produtos/:codigo', GetProdutoPorCodigo);
+  THorse.Get('/Produtos/:codigo/niveis', GetNiveisProduto);
+  THorse.Get('/Categorias', GetCategorias);
+  THorse.Get('/Categorias/:codigo/foto', GetFotoCategoria);
+  THorse.Get('/Produtos/:codigo/foto', GetFotoProduto);
+  THorse.Get('/Produtos/grades/:codigo', GetGradesProduto);
+  THorse.Get('/Produtos/grades/:codigo/:tamanho', GetGradeProduto);
+  THorse.Get('/Categorias/produtos/:id', GetProdutosPorGrupo);
 end;
 
 initialization

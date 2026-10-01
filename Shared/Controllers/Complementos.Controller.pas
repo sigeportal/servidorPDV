@@ -67,6 +67,7 @@ end;
 class procedure TComplementosController.Registrar;
 begin
   THorse.Get('/v1/complementos/:subgrupo', GetAdicionais);
+  THorse.Get('/Complementos/:subgrupo', GetAdicionais);
 end;
 
 initialization

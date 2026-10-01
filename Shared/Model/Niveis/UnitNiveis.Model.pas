@@ -7,7 +7,7 @@ uses
 	System.StrUtils,
   System.Classes,
   System.Generics.Collections,
-  UnitPortalORM.Model, UnitDatabase;
+  UnitPortalORM.Model, UnitDatabase, UnitConnection.Model.Interfaces;
 
 type
 	[TNomeTabela('OPCOES', 'OP_CODIGO')]
@@ -82,16 +82,46 @@ end;
 
 procedure TNivel.SetCodigo(const Value: Integer);
 var
-  ListaOpcoes: TList<TOpcao>;
   Opcao: TOpcao;
+  Query: iQuery;
+  ListaOpcoes: TList<TOpcao>;
 begin
-	FCodigo := Value;
-	// cria objeto
-  Opcao := TOpcao.Create(TDatabase.Connection);
-  Opcao.CriaTabela;
-	// busca opções
-  ListaOpcoes := Opcao.PreencheListaWhere<TOpcao>('OP_ATIVO = ''S'' AND OP_NI='+Value.ToString, 'OP_CODIGO');
-  FOpcoes := ListaOpcoes.ToArray;
+  FCodigo := Value;
+
+  // Limpa o array anterior se já existir conteúdo, evitando memory leak
+  if Length(FOpcoes) > 0 then
+  begin
+    for Opcao in FOpcoes do
+      Opcao.DisposeOf; // ou Opcao.Free
+    SetLength(FOpcoes, 0);
+  end;
+
+  ListaOpcoes := TList<TOpcao>.Create;
+  try
+    Query := TDatabase.Query;
+    Query.Add('SELECT OP_CODIGO, OP_NOME, OP_NI, OP_VALOR, OP_ATIVO ');
+    Query.Add('FROM OPCOES ');
+    Query.Add('WHERE OP_NI = :NIVEL AND OP_ATIVO = ''S'' ');
+    Query.Add('ORDER BY OP_CODIGO');
+    Query.AddParam('NIVEL', Value);
+    Query.Open();
+    while not Query.DataSet.Eof do
+    begin
+      Opcao := TOpcao.Create(TDatabase.Connection);
+      // Preenche as propriedades diretamente com a query já aberta
+      Opcao.Codigo := Query.DataSet.FieldByName('OP_CODIGO').AsInteger;
+      Opcao.Nome   := Query.DataSet.FieldByName('OP_NOME').AsString;
+      Opcao.CodNivel  := Query.DataSet.FieldByName('OP_NI').AsInteger;
+      Opcao.ValorAdicional  := Query.DataSet.FieldByName('OP_VALOR').AsCurrency;
+      Opcao.AtivoStr  := Query.DataSet.FieldByName('OP_ATIVO').AsString;
+      Opcao.Ativo  := Query.DataSet.FieldByName('OP_ATIVO').AsString = 'S';
+      ListaOpcoes.Add(Opcao);
+      Query.DataSet.Next;
+    end;
+    FOpcoes := ListaOpcoes.ToArray;
+  finally
+    ListaOpcoes.Free; // Libera a lista da memória (os objetos continuam no array FOpcoes)
+  end;
 end;
 
 { TOpcao }

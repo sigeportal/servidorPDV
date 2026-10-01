@@ -176,6 +176,12 @@ begin
   THorse.Post('/v1/mesas/:codigo/status/:status', Post);
   THorse.Get('/v1/mesas/:codigo', GetMesa);
   THorse.Put('/v1/mesas/:codigo', Put);
+  //
+  THorse.Get('/Mesas', Get);
+  THorse.Post('/Mesas', CriaMesa);
+  THorse.Post('/Mesas/:codigo/status/:status', Post);
+  THorse.Get('/Mesas/:codigo', GetMesa);
+  THorse.Put('/Mesas/:codigo', Put);
 end;
 
 type

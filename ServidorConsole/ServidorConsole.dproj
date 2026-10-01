@@ -112,7 +112,7 @@
         <Manifest_File>(None)</Manifest_File>
         <DCC_ExeOutput>./dist/DEV</DCC_ExeOutput>
         <Debugger_IncludeSystemVars>true</Debugger_IncludeSystemVars>
-        <Debugger_EnvVars>CAMINHO_BD=D:\PROJETOS\Lanchonete\Dados\PASTELARIA_DOS_AMIGOS\PRINCIPAL.FDB;$(Debugger_EnvVars)</Debugger_EnvVars>
+        <Debugger_EnvVars>CAMINHO_BD=D:\PROJETOS\Lanchonete\Dados\REI_DA_GARAPA\PRINCIPAL.FDB;$(Debugger_EnvVars)</Debugger_EnvVars>
     </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">

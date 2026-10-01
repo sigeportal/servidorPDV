@@ -22,7 +22,8 @@ uses
 	UnitMovimentacoes.Model,
 	UnitRecPgm.Model,
 	UnitVeAdicionais.Model,
-	UnitVeOpcoes.Model;
+	UnitVeOpcoes.Model,
+	FireDAC.Comp.Client;
 
 type
 	TOperacaoVenda = class(TInterfacedObject, iOperacoesStrategy)
@@ -34,8 +35,11 @@ type
 		FTipoDescontoCartao: TTipoDescontoCartao;
 		FPercentualJuros   : Double;
 		FVenda             : TVendas;
+		FConnection        : TFDConnection;
+		FTransaction       : TFDTransaction;
 		ListaItens         : TList<TVenEst>;
 		procedure AtualizaMovEstado(CodMov: integer);
+		function CriarQuery: TFDQuery;
 	public
 		constructor Create;
 		destructor Destroy; override;
@@ -45,6 +49,7 @@ type
 		function SetTipoFatura(Value: TTipoFatura): iOperacoesStrategy;
 		function SetOperacao(Value: TObject): iOperacoesStrategy;
 		function SetItens(Value: TObject): iOperacoesStrategy;
+		function SetContextoTransacao(Connection: TFDConnection; Transaction: TFDTransaction): iOperacoesStrategy;
 		function SetPercentualJuros(Value: Double): iOperacoesStrategy;
 		function SetTipoDescontoCartao(Value: TTipoDescontoCartao): iOperacoesStrategy;
 		function InsereOperacao: iOperacoesStrategy;
@@ -69,18 +74,22 @@ uses
 
 procedure TOperacaoVenda.AtualizaMovEstado(CodMov: integer);
 var
-	Query: iQuery;
+	Query: TFDQuery;
 begin
-	Query := TDatabase.Query;
-	try
-		Query.Add('UPDATE MOVIMENTACOES SET MOV_ESTADO = ''B'' WHERE MOV_CODIGO = :CODIGO');
-		Query.AddParam('CODIGO', CodMov);
-		Query.ExecSQL;
-	except
-		on E: Exception do
-		begin
-			raise Exception.Create('Erro ao atualizar campo "MOV_ESTADO"!' + sLineBreak + E.Message);
-		end;
+	Query := CriarQuery;
+  try
+    try
+      Query.SQL.Add('UPDATE MOVIMENTACOES SET MOV_ESTADO = ''B'' WHERE MOV_CODIGO = :CODIGO');
+      Query.ParamByName('CODIGO').AsInteger := CodMov;
+      Query.ExecSQL;
+    except
+      on E: Exception do
+      begin
+        raise Exception.Create('Erro ao atualizar campo "MOV_ESTADO"!' + sLineBreak + E.Message);
+      end;    
+    end;
+	finally
+		Query.DisposeOf;
 	end;
 end;
 
@@ -96,6 +105,13 @@ begin
 	ListaItens          := TList<TVenEst>.Create;
 	FTipoDescontoCartao := TTipoDescontoCartao.Despesa;
 	FTipoDescontoCartao := TTipoDescontoCartao.Despesa;
+end;
+
+function TOperacaoVenda.CriarQuery: TFDQuery;
+begin
+	Result := TFDQuery.Create(nil);
+	Result.Connection := FConnection;
+	Result.Transaction := FTransaction;
 end;
 
 destructor TOperacaoVenda.Destroy;
@@ -129,9 +145,11 @@ var
 	RecPgm               : TRecPgm;
 begin
 	Result := Self;
+	Faturamento := nil;
 	try
+		try
 		// FATURAMENTO DE PEDIDO A PRAZO
-		Faturamento           := TFaturamento.Create(TDatabase.Connection);
+		Faturamento           := TFaturamento.Create(FConnection, FTransaction);
 		Faturamento.Codigo    := FPed_Fat.FAT;
 		Faturamento.Cli       := FVenda.Cli;
 		Faturamento.Valor     := FVenda.Valor;
@@ -145,15 +163,18 @@ begin
 		Parcela := 1;
 		for i   := 0 to Pred(FListaPF_Parcela.Count) do
 		begin
+			TipoPgm     := nil;
+			Recebimento := nil;
+			Caixa       := nil;
+			RecPgm      := nil;
+			try
 			// tipo pgm
-			TipoPgm := TTipoPgm.Create(TDatabase.Connection);
-			TipoPgm.CriaTabela;
+			TipoPgm := TTipoPgm.Create(FConnection, FTransaction);
 			TipoPgm.BuscaDadosTabela(FListaPF_Parcela[i].TP);
 			CondicaoPgtoAVista := (FListaPF_Parcela[i].TP = 0) or (TipoPgm.Condicao.ToUpper = 'V');
 			/// insere recebimento
 			Cod_Rec     := IncrementaGenerator('GEN_REC');
-			Recebimento := TRecebimento.Create(TDatabase.Connection);
-			Recebimento.CriaTabela;
+			Recebimento := TRecebimento.Create(FConnection, FTransaction);
 			Recebimento.Codigo     := Cod_Rec;
 			Recebimento.Valor      := FListaPF_Parcela[i].Valor;
 			Recebimento.Vencimento := FListaPF_Parcela[i].Vencimento;
@@ -169,8 +190,7 @@ begin
 			Recebimento.FAT       := FPed_Fat.FAT;
 			Recebimento.Juros     := FListaPF_Parcela[i].Juros;
 			Recebimento.Descontos := FListaPF_Parcela[i].Descontos;
-			Caixa                 := TCaixa.Create(TDatabase.Connection);
-			Caixa.BuscaDadosTabela(GeraCodigo('CAIXA', 'CAI_CODIGO'));
+			Caixa                 := TCaixa.Create(FConnection, FTransaction);
 			Recebimento.Cai        := Caixa.Codigo;
 			Recebimento.Tipo       := TipoPgm.Descricao;
 			Recebimento.Con        := FListaPF_Parcela[i].TP;
@@ -186,8 +206,7 @@ begin
 				else
 					ValorPago  := FListaPF_Parcela[i].Valorpg;
 				Cod_Mov      := IncrementaGenerator('GEN_MOV');
-				Movimentacao := TMovimentacoes.Create(TDatabase.Connection);
-				Movimentacao.CriaTabela;
+				Movimentacao := TMovimentacoes.Create(FConnection, FTransaction);
 				Movimentacao.Codigo    := Cod_Mov;
 				Movimentacao.Credito   := ValorPago;
 				Movimentacao.Debito    := 0;
@@ -210,7 +229,7 @@ begin
 					AtualizaMovEstado(Cod_Mov);
 					// debita o caixa
 					Cod_Mov                := IncrementaGenerator('GEN_MOV');
-					Movimentacao           := TMovimentacoes.Create(TDatabase.Connection);
+					Movimentacao           := TMovimentacoes.Create(FConnection, FTransaction);
 					Movimentacao.Codigo    := Cod_Mov;
 					Movimentacao.Credito   := 0;
 					Movimentacao.Debito    := ValorPago;
@@ -229,7 +248,7 @@ begin
 					AtualizaMovEstado(Cod_Mov);
 					// credita a conta
 					Cod_Mov                := IncrementaGenerator('GEN_MOV');
-					Movimentacao           := TMovimentacoes.Create(TDatabase.Connection);
+					Movimentacao           := TMovimentacoes.Create(FConnection, FTransaction);
 					Movimentacao.Codigo    := Cod_Mov;
 					Movimentacao.Credito   := ValorPago;
 					Movimentacao.Debito    := 0;
@@ -252,8 +271,7 @@ begin
 				else
 					Vencimento := FListaPF_Parcela[i].Vencimento;
 				/// //
-				RecPgm := TRecPgm.Create(TDatabase.Connection);
-				RecPgm.CriaTabela;
+				RecPgm := TRecPgm.Create(FConnection, FTransaction);
 				RecPgm.Codigo   := IncrementaGenerator('GEN_RR');
 				RecPgm.Datapgm  := Vencimento;
 				RecPgm.Dinheiro := ifThen(FPercentualJuros > 0, Arredondar(FListaPF_Parcela[i].Valorpg * FPercentualJuros, 2), FListaPF_Parcela[i].Valorpg);
@@ -267,9 +285,18 @@ begin
 			end
 			else
 			begin
-				RecPgm := TRecPgm.Create(TDatabase.Connection);
-				RecPgm.CriaTabela;
+				RecPgm := TRecPgm.Create(FConnection, FTransaction);
 				RecPgm.InsereRegistroPrazo(IncrementaGenerator('GEN_RR'), Cod_Rec);
+			end;
+			finally
+				if Assigned(RecPgm) then
+					RecPgm.DisposeOf;
+				if Assigned(Caixa) then
+					Caixa.DisposeOf;
+				if Assigned(Recebimento) then
+					Recebimento.DisposeOf;
+				if Assigned(TipoPgm) then
+					TipoPgm.DisposeOf;
 			end;
 			Parcela := Parcela + 1;
 		end;
@@ -278,6 +305,10 @@ begin
 		begin
 			raise Exception.Create('Erro ao inserir Faturamento Venda!' + sLineBreak + E.Message);
 		end;
+		end;
+	finally
+		if Assigned(Faturamento) then
+			Faturamento.DisposeOf;
 	end;
 end;
 
@@ -291,7 +322,7 @@ var
 	i, c, o        : integer;
 	Produto        : TProdutos;
 	HisPro         : THisPro;
-	Query          : iQuery;
+	Query          : TFDQuery;
 	DavPro         : TDAVItens;
 	VenEstAux      : TVenEst;
 	ComplementoaAux: TVeAdicionais;
@@ -312,95 +343,140 @@ begin
 			// insere os adicionais de complementos
 			for c := Low(VenEst.Complementos) to High(VenEst.Complementos) do
 			begin
-				ComplementoaAux            := VenEst.Complementos[c].Clonar;
-				ComplementoaAux.Codigo     := IncrementaGenerator('GEN_VE_ADICIONAIS');
-				ComplementoaAux.Ve         := CodigoVenEst;
-				ComplementoaAux.Adi        := VenEst.Complementos[c].Adi;
-				ComplementoaAux.Quantidade := VenEst.Complementos[c].Quantidade;
-				ComplementoaAux.Valor      := VenEst.Complementos[c].Valor;
-				ComplementoaAux.SalvaNoBanco(1);
-        SomaComplementos := SomaComplementos + (VenEst.Complementos[c].Quantidade * VenEst.Complementos[c].Valor);
+				ComplementoaAux            := TVeAdicionais.Create(FConnection, FTransaction);
+				try
+					ComplementoaAux.Codigo     := IncrementaGenerator('GEN_VE_ADICIONAIS');
+					ComplementoaAux.Ve         := CodigoVenEst;
+					ComplementoaAux.Adi        := VenEst.Complementos[c].Adi;
+					ComplementoaAux.Quantidade := VenEst.Complementos[c].Quantidade;
+					ComplementoaAux.Valor      := VenEst.Complementos[c].Valor;
+					ComplementoaAux.SalvaNoBanco(1);
+					SomaComplementos := SomaComplementos + (VenEst.Complementos[c].Quantidade * VenEst.Complementos[c].Valor);
+				finally
+					ComplementoaAux.DisposeOf;
+				end;
 			end;
       SomaOpcoes := 0;
 			// insere as opcoes
 			for o := Low(VenEst.OpcoesNivel) to High(VenEst.OpcoesNivel) do
 			begin
-				OpcoesAux                := VenEst.OpcoesNivel[o].Clonar;
-				OpcoesAux.Codigo         := IncrementaGenerator('GEN_VE_OPCOES');
-				OpcoesAux.Ve             := CodigoVenEst;
-				OpcoesAux.CodNivel       := VenEst.OpcoesNivel[o].CodNivel;
-				OpcoesAux.Quantidade     := VenEst.OpcoesNivel[o].Quantidade;
-				OpcoesAux.ValorAdicional := VenEst.OpcoesNivel[o].ValorAdicional;
-				OpcoesAux.SalvaNoBanco(1);
-        SomaOpcoes := SomaOpcoes + (VenEst.OpcoesNivel[o].Quantidade * VenEst.OpcoesNivel[o].ValorAdicional);
+				OpcoesAux                := TVeOpcoes.Create(FConnection, FTransaction);
+				try
+					OpcoesAux.Codigo         := IncrementaGenerator('GEN_VE_OPCOES');
+					OpcoesAux.Ve             := CodigoVenEst;
+					OpcoesAux.CodNivel       := VenEst.OpcoesNivel[o].CodNivel;
+					OpcoesAux.Quantidade     := VenEst.OpcoesNivel[o].Quantidade;
+					OpcoesAux.ValorAdicional := VenEst.OpcoesNivel[o].ValorAdicional;
+					OpcoesAux.SalvaNoBanco(1);
+					SomaOpcoes := SomaOpcoes + (VenEst.OpcoesNivel[o].Quantidade * VenEst.OpcoesNivel[o].ValorAdicional);
+				finally
+					OpcoesAux.DisposeOf;
+				end;
 			end;
 			// clona o venEst e salva no banco
-			VenEstAux := VenEst.Clone;
+			VenEstAux := TVenEst.Create(FConnection, FTransaction);
 			try
+				VenEstAux.Codigo          := VenEst.Codigo;
+				VenEstAux.Valor           := VenEst.Valor;
+				VenEstAux.Quantidade      := VenEst.Quantidade;
+				VenEstAux.Ven             := VenEst.Ven;
+				VenEstAux.Pro             := VenEst.Pro;
+				VenEstAux.Lucro           := VenEst.Lucro;
+				VenEstAux.Valorr          := VenEst.Valorr;
+				VenEstAux.Valorl          := VenEst.Valorl;
+				VenEstAux.Valorf          := VenEst.Valorf;
+				VenEstAux.Diferenca       := VenEst.Diferenca;
+				VenEstAux.Liquido         := VenEst.Liquido;
+				VenEstAux.Valor2          := VenEst.Valor2;
+				VenEstAux.Valorcm         := VenEst.Valorcm;
+				VenEstAux.Aliquota        := VenEst.Aliquota;
+				VenEstAux.Gtin            := VenEst.Gtin;
+				VenEstAux.Embalagem       := VenEst.Embalagem;
+				VenEstAux.Valorb          := VenEst.Valorb;
+				VenEstAux.Desconto        := VenEst.Desconto;
+				VenEstAux.Valorc          := VenEst.Valorc;
+				VenEstAux.Obs             := VenEst.Obs;
+				VenEstAux.Gra             := VenEst.Gra;
+				VenEstAux.Semente_tratada := VenEst.Semente_tratada;
+				VenEstAux.Valor_partida   := VenEst.Valor_partida;
+				VenEstAux.Variacao        := VenEst.Variacao;
+				VenEstAux.Usu             := VenEst.Usu;
       	if VenEstAux.Valor = 0 then        
 	      	VenEstAux.Valor := SomaComplementos + SomaOpcoes;
-				VenEstAux.CriaTabela;
 				VenEstAux.SalvaNoBanco(1);
 			finally
 				VenEstAux.DisposeOf;
 			end;
 			// quantidade anterior
 			Quantidadea := 0;
-			Produto     := TProdutos.Create(TDatabase.Connection);
-			Produto.BuscaDadosTabela(VenEst.Pro);
-			Quantidadea          := Produto.Quantidade;
-			Cod                  := IncrementaGenerator('GEN_HP');
-			HisPro               := THisPro.Create(TDatabase.Connection);
-			HisPro.Codigo        := Cod;
-			HisPro.Data          := Date;
-			HisPro.Pro           := VenEst.Pro;
-			HisPro.Origem        := copy('VD - ' + FVenda.Nome_cliente, 1, 30);
-			HisPro.Doc           := FVenda.Codigo.ToString;
-			HisPro.Quantidade    := VenEst.Quantidade;
-			HisPro.ValorC        := Arredondar(VenEst.ValorC / VenEst.Quantidade, 2);
-			HisPro.ValorV        := Arredondar(VenEst.Valor / VenEst.Quantidade, 2);
-			HisPro.ValorCM       := Arredondar(VenEst.ValorCM / VenEst.Quantidade, 2);
-			HisPro.ValorOp       := Arredondar(VenEst.Valorl / VenEst.Quantidade, 2);
-			HisPro.ValorM        := Arredondar(VenEst.Valorf / VenEst.Quantidade, 2);
-			HisPro.Tipo          := 'S';
-			HisPro.Tipo2         := 1;
-			HisPro.QuantAnterior := Quantidadea;
-			HisPro.SalvaNoBanco(1);
-			/// /
-			// DA BAIXA NO ESTOQUE E VERIFICA SE O PRODUTO PODE RECEBER O AJUSTE
-			if not Produto.Estoque.Contains('N') then
-			begin
-				Query := TDatabase.Query;
-				Query.Clear;
-				Query.Add('UPDATE PRODUTOS SET PRO_QUANTIDADE = COALESCE(PRO_QUANTIDADE, 0) - :QUANTIDADE');
-				Query.Add('WHERE PRO_CODIGO = :PRODUTO ');
-				Query.AddParam('QUANTIDADE', VenEst.Quantidade);
-				Query.AddParam('PRODUTO', VenEst.Pro);
-				Query.ExecSQL;
+			Produto     := TProdutos.Create(FConnection, FTransaction);
+			try
+				Produto.BuscaDadosTabela(VenEst.Pro);
+				Quantidadea          := Produto.Quantidade;
+				Cod                  := IncrementaGenerator('GEN_HP');
+				HisPro               := THisPro.Create(FConnection, FTransaction);
+				try
+					HisPro.Codigo        := Cod;
+					HisPro.Data          := Date;
+					HisPro.Pro           := VenEst.Pro;
+					HisPro.Origem        := copy('VD - ' + FVenda.Nome_cliente, 1, 30);
+					HisPro.Doc           := FVenda.Codigo.ToString;
+					HisPro.Quantidade    := VenEst.Quantidade;
+					HisPro.ValorC        := Arredondar(VenEst.ValorC / VenEst.Quantidade, 2);
+					HisPro.ValorV        := Arredondar(VenEst.Valor / VenEst.Quantidade, 2);
+					HisPro.ValorCM       := Arredondar(VenEst.ValorCM / VenEst.Quantidade, 2);
+					HisPro.ValorOp       := Arredondar(VenEst.Valorl / VenEst.Quantidade, 2);
+					HisPro.ValorM        := Arredondar(VenEst.Valorf / VenEst.Quantidade, 2);
+					HisPro.Tipo          := 'S';
+					HisPro.Tipo2         := 1;
+					HisPro.QuantAnterior := Quantidadea;
+					HisPro.SalvaNoBanco(1);
+				finally
+					HisPro.DisposeOf;
+				end;
+				// DA BAIXA NO ESTOQUE E VERIFICA SE O PRODUTO PODE RECEBER O AJUSTE
+				if not Produto.Estoque.Contains('N') then
+				begin
+					Query := CriarQuery;
+					try
+						Query.SQL.Add('UPDATE PRODUTOS SET PRO_QUANTIDADE = COALESCE(PRO_QUANTIDADE, 0) - :QUANTIDADE');
+						Query.SQL.Add('WHERE PRO_CODIGO = :PRODUTO ');
+						Query.ParamByName('QUANTIDADE').AsFloat := VenEst.Quantidade;
+						Query.ParamByName('PRODUTO').AsInteger := VenEst.Pro;
+						Query.ExecSQL;
+					finally
+						Query.DisposeOf;
+					end;
+				end;
+				// Insere o Registro de DAV_PRO
+				DavPro := TDAVItens.Create(FConnection, FTransaction);
+				try
+					DavPro.Codigo     := IncrementaGenerator('GEN_DP');
+					DavPro.CodDav     := FCOD_DAV;
+					DavPro.CodPro     := VenEst.Pro;
+					DavPro.Quantidade := VenEst.Quantidade;
+					DavPro.Valor      := VenEst.Valor;
+					DavPro.Valorr     := VenEst.Valorr;
+					DavPro.Valorl     := VenEst.Valorl;
+					DavPro.Valorf     := VenEst.Valorf;
+					DavPro.Lucro      := VenEst.Lucro;
+					DavPro.Aliqicms   := FloatToStr(Produto.Totalizador.Aliq_ICMS);
+					DavPro.Nome       := Produto.Nome;
+					DavPro.Gtin       := VenEst.Gtin;
+					DavPro.Embalagem  := VenEst.Embalagem;
+					DavPro.Cancelado  := 'N';
+					DavPro.Data       := Date;
+					DavPro.Nitem      := i + 1;
+					DavPro.Acrescimo  := 0;
+					DavPro.Desconto   := 0;
+					DavPro.Sit_trib   := Produto.Totalizador.Sit_trib;
+					DavPro.SalvaNoBanco(1);
+				finally
+					DavPro.DisposeOf;
+				end;
+			finally
+				Produto.DisposeOf;
 			end;
-			// Insere o Registro de DAV_PRO
-			DavPro := TDAVItens.Create(TDatabase.Connection);
-			DavPro.CriaTabela;
-			DavPro.Codigo     := IncrementaGenerator('GEN_DP');
-			DavPro.CodDav     := FCOD_DAV;
-			DavPro.CodPro     := VenEst.Pro;
-			DavPro.Quantidade := VenEst.Quantidade;
-			DavPro.Valor      := VenEst.Valor;
-			DavPro.Valorr     := VenEst.Valorr;
-			DavPro.Valorl     := VenEst.Valorl;
-			DavPro.Valorf     := VenEst.Valorf;
-			DavPro.Lucro      := VenEst.Lucro;
-			DavPro.Aliqicms   := FloatToStr(Produto.Totalizador.Aliq_ICMS);
-			DavPro.Nome       := Produto.Nome;
-			DavPro.Gtin       := VenEst.Gtin;
-			DavPro.Embalagem  := VenEst.Embalagem;
-			DavPro.Cancelado  := 'N';
-			DavPro.Data       := Date;
-			DavPro.Nitem      := i + 1;
-			DavPro.Acrescimo  := 0;
-			DavPro.Desconto   := 0;
-			DavPro.Sit_trib   := Produto.Totalizador.Sit_trib;
-			DavPro.SalvaNoBanco(1);
 		end;
 	except
 		on E: Exception do
@@ -429,34 +505,31 @@ begin
 		FVenda.Hora        := Now;
 		FVenda.DEVOLUCAO_P := 'N';
 		FVenda.FAT         := FPed_Fat.FAT;
-		// clona a venda
-		FVendaAux := FVenda.Clone;
-		try
-			FVendaAux.SalvaNoBanco(1);
-		finally
-			FVendaAux.DisposeOf;
-		end;
+		FVenda.SalvaNoBanco(1);
 		try
 			// Insere o Registro de DAV
 			FCOD_DAV := IncrementaGenerator('GEN_DAV');
-			DAV      := TDAV.Create(TDatabase.Connection);
-			DAV.CriaTabela;
-			DAV.Codigo      := FCOD_DAV;
-			DAV.Data        := Date;
-			DAV.Hora        := Now;
-			DAV.CodFun      := 1;
-			DAV.Valor       := FVenda.Valor;
-			DAV.CodCli      := FVenda.Cli;
-			DAV.Formas_pgm  := 'DINHEIRO';
-			DAV.Validade    := '10 DIAS';
-			DAV.Estado      := 2; // ESTADO 1=PENDENTE 2=IMPRESSO
-			DAV.Novo        := 0;
-			DAV.Funcao      := 'ORCAMENTO';
-			DAV.CodVenda    := FVenda.Codigo;
-			DAV.NomeCliente := FVenda.Nome_cliente;
-			DAV.CPF_CNPJ    := '000.000.000-00';
-			DAV.Fatura      := FPed_Fat.FAT;
-			DAV.SalvaNoBanco(1);
+			DAV      := TDAV.Create(FConnection, FTransaction);
+			try
+				DAV.Codigo      := FCOD_DAV;
+				DAV.Data        := Date;
+				DAV.Hora        := Now;
+				DAV.CodFun      := 1;
+				DAV.Valor       := FVenda.Valor;
+				DAV.CodCli      := FVenda.Cli;
+				DAV.Formas_pgm  := 'DINHEIRO';
+				DAV.Validade    := '10 DIAS';
+				DAV.Estado      := 2; // ESTADO 1=PENDENTE 2=IMPRESSO
+				DAV.Novo        := 0;
+				DAV.Funcao      := 'ORCAMENTO';
+				DAV.CodVenda    := FVenda.Codigo;
+				DAV.NomeCliente := FVenda.Nome_cliente;
+				DAV.CPF_CNPJ    := '000.000.000-00';
+				DAV.Fatura      := FPed_Fat.FAT;
+				DAV.SalvaNoBanco(1);
+			finally
+				DAV.DisposeOf;
+			end;
 		except
 			on E: Exception do
 				raise Exception.Create('Erro ao inserir DAV!' + sLineBreak + E.Message);
@@ -483,9 +556,27 @@ begin
 		FPed_Fat.Valorpg := SomaVlrPago;
 		FPed_Fat.Cod_Ped := FVenda.Codigo;
 		FPed_Fat.Codigo  := IncrementaGenerator('GEN_PF');
-		Ped_FatAux       := FPed_Fat.Clone;
+		Ped_FatAux       := TPedFat.Create(FConnection, FTransaction);
 		try
-			Ped_FatAux.CriaTabela;
+			Ped_FatAux.Codigo      := FPed_Fat.Codigo;
+			Ped_FatAux.Ficha       := FPed_Fat.Ficha;
+			Ped_FatAux.Cod_Ped     := FPed_Fat.Cod_Ped;
+			Ped_FatAux.Desconto    := FPed_Fat.Desconto;
+			Ped_FatAux.Valor       := FPed_Fat.Valor;
+			Ped_FatAux.DataC       := FPed_Fat.DataC;
+			Ped_FatAux.ValorPG     := FPed_Fat.ValorPG;
+			Ped_FatAux.Cliente     := FPed_Fat.Cliente;
+			Ped_FatAux.Tabela      := FPed_Fat.Tabela;
+			Ped_FatAux.ValorB      := FPed_Fat.ValorB;
+			Ped_FatAux.FUN         := FPed_Fat.FUN;
+			Ped_FatAux.Campo_DataC := FPed_Fat.Campo_DataC;
+			Ped_FatAux.FAT         := FPed_Fat.FAT;
+			Ped_FatAux.Parcelas    := FPed_Fat.Parcelas;
+			Ped_FatAux.Campo_Fat   := FPed_Fat.Campo_Fat;
+			Ped_FatAux.Tipo        := FPed_Fat.Tipo;
+			Ped_FatAux.Cod_Cli     := FPed_Fat.Cod_Cli;
+			Ped_FatAux.Campo_Ped   := FPed_Fat.Campo_Ped;
+			Ped_FatAux.Data        := FPed_Fat.Data;
 			Ped_FatAux.SalvaNoBanco(1);
 		finally
 			Ped_FatAux.DisposeOf;
@@ -510,9 +601,14 @@ begin
 		Parcela := 1;
 		for i   := 0 to Pred(FListaPF_Parcela.Count) do
 		begin
-			PFParcelaAux := FListaPF_Parcela[i].Clone;
+			PFParcelaAux := TPF_Parcela.Create(FConnection, FTransaction);
 			try
-				PFParcelaAux.CriaTabela;
+				PFParcelaAux.TP         := FListaPF_Parcela[i].TP;
+				PFParcelaAux.Valor      := FListaPF_Parcela[i].Valor;
+				PFParcelaAux.Vencimento := FListaPF_Parcela[i].Vencimento;
+				PFParcelaAux.Juros      := FListaPF_Parcela[i].Juros;
+				PFParcelaAux.Descontos  := FListaPF_Parcela[i].Descontos;
+				PFParcelaAux.Valorpg    := FListaPF_Parcela[i].Valorpg;
 				PFParcelaAux.Codigo    := IncrementaGenerator('GEN_PFP');
 				PFParcelaAux.PF        := FPed_Fat.Codigo;
 				PFParcelaAux.Estado    := 2; // Faturado
@@ -540,6 +636,13 @@ function TOperacaoVenda.SetItens(Value: TObject): iOperacoesStrategy;
 begin
 	Result := Self;
 	ListaItens.Add(TVenEst(Value));
+end;
+
+function TOperacaoVenda.SetContextoTransacao(Connection: TFDConnection; Transaction: TFDTransaction): iOperacoesStrategy;
+begin
+	Result := Self;
+	FConnection := Connection;
+	FTransaction := Transaction;
 end;
 
 function TOperacaoVenda.SetOperacao(Value: TObject): iOperacoesStrategy;

@@ -61,7 +61,11 @@ uses
   UnitDataset.Controller in '..\..\..\FormsComuns\Classes\ServidoresUtils\Controllers\UnitDataset.Controller.pas',
   UnitGrades.Model in '..\Shared\Model\Grades\UnitGrades.Model.pas',
   UnitAdicionais.Model in '..\Shared\Model\Adicionais\UnitAdicionais.Model.pas',
-  UnitTamanhos.Model in '..\Shared\Model\Tamanhos\UnitTamanhos.Model.pas';
+  UnitTamanhos.Model in '..\Shared\Model\Tamanhos\UnitTamanhos.Model.pas',
+  UnitProducao.Service in '..\Shared\Services\UnitProducao.Service.pas',
+  UnitNFCeParser.Service in '..\Shared\Services\UnitNFCeParser.Service.pas',
+  NFCe.Controller in '..\Shared\Controllers\NFCe.Controller.pas',
+  Producao.Controller in '..\Shared\Controllers\Producao.Controller.pas';
 
 var
 	LLogFileConfig: THorseLoggerConsoleConfig;
@@ -98,8 +102,8 @@ begin
 		TLoginController.Router;
 		TMesasController.Registrar;
 		TComandasController.Registrar;
-		TProdutosController.Registrar;
 		TProdutosAdminController.Registrar;
+		TProdutosController.Registrar;
 		TEstoqueController.Registrar;
 		TFluxoCaixaController.Registrar;
 		TRelatoriosController.Registrar;
@@ -110,6 +114,8 @@ begin
 		TDespesasController.Router;
 		TEmpresaController.Router;
 		TControleSenhasController.Router;
+		TNFCeController.Registrar;
+		TProducaoController.Registrar;
 
 		// start server
 		THorse.Listen(ObterPorta,

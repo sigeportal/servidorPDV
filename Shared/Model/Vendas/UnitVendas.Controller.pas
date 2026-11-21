@@ -1,4 +1,4 @@
-unit UnitVendas.Controller;
+Ôªøunit UnitVendas.Controller;
 
 interface
 uses
@@ -31,7 +31,8 @@ uses
   UnitFunctions,
   UnitVendas.Model,
   UnitConstants,
-  UnitTabela.Helpers, System.Generics.Collections, UnitPedFat.Model;
+  UnitTabela.Helpers, System.Generics.Collections, UnitPedFat.Model,
+  UnitProducao.Service;
 
 var
   VendaPostLock: TObject;
@@ -80,13 +81,13 @@ begin
     else
       SQLBase := 'SELECT DISTINCT VEN_CODIGO FROM VENDAS';
 
-    // Monta filtros din‚micos
+    // Monta filtros din√¢micos
     for QueryParams in Req.Query.Dictionary.Keys do
     begin
     	ParamName := QueryParams.ToUpper;
       ParamValue := Req.Query.Items[ParamName].Replace('''', '');
 
-      // Ignora par‚metros de controle como "total"
+      // Ignora par√¢metros de controle como "total"
       if ParamName = 'TOTAL' then
         Continue;
 
@@ -151,6 +152,7 @@ var
 begin
   TMonitor.Enter(VendaPostLock);
   try
+  TProducaoService.GarantirEstrutura;
   OperacaoVenda := nil;
   Resposta := nil;
   Transacao := nil;
@@ -254,7 +256,7 @@ initialization
   .Path('vendas')
       .Tag('Vendas')
       .GET('Lista Todos(as)', 'Lista todos(as) os(as) Vendass')
-        .AddResponse(200, 'OperaÁ„o bem Sucedida')
+        .AddResponse(200, 'Opera√ß√£o bem Sucedida')
           .Schema(TVendasResponse)
           .IsArray(True)
         .&End
@@ -295,10 +297,10 @@ initialization
           .Required(True)
           .Schema(SWAG_INTEGER)
         .&End
-        .AddResponse(200, 'OperaÁ„o bem Sucedida')
+        .AddResponse(200, 'Opera√ß√£o bem Sucedida')
           .Schema(TVendas)
         .&End
-        .AddResponse(404, 'Vendas n„o encontrado(a)').&End
+        .AddResponse(404, 'Vendas n√£o encontrado(a)').&End
         .AddResponse(400, 'BadRequest')
           .Schema(TAPIError)
         .&End
@@ -309,7 +311,7 @@ initialization
           .Required(True)
           .Schema(SWAG_INTEGER)
         .&End
-        .AddResponse(404, 'Vendas n„o encontrado(a)').&End
+        .AddResponse(404, 'Vendas n√£o encontrado(a)').&End
         .AddResponse(400, 'BadRequest')
           .Schema(TAPIError)
         .&End

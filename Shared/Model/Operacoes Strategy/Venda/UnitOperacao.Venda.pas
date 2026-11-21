@@ -70,7 +70,8 @@ uses
 	UnitDAV.Model,
 	UnitDatabase,
 	UnitProdutos.Model,
-	UnitHisPro.Model;
+	UnitHisPro.Model,
+	UnitProducao.Service;
 
 procedure TOperacaoVenda.AtualizaMovEstado(CodMov: integer);
 var
@@ -329,37 +330,52 @@ var
 	OpcoesAux      : TVeOpcoes;
   SomaComplementos: Currency;
   SomaOpcoes: Currency;
+  CodAdi, CodOpcaoReal: Integer;
+  QtdSegura, CustoProduto, CustoOpcoes, CustoAdicionais, CustoTotalLinha: Double;
+  UsouFichaProduto, UsouFichaExtra, TemVoOp: Boolean;
 begin
 	Result := Self;
 	try
+		TemVoOp := TProducaoService.ColunaExiste(FConnection, FTransaction, 'VE_OPCOES', 'VO_OP');
 		for i := 0 to Pred(ListaItens.Count) do
 		begin
 			VenEst := ListaItens[i];
+			QtdSegura := IfThen(VenEst.Quantidade > 0, VenEst.Quantidade, 1);
 			// salva item
 			CodigoVenEst  := IncrementaGenerator('GEN_VE');
 			VenEst.Codigo := CodigoVenEst;
 			VenEst.Ven    := FVenda.Codigo;
       SomaComplementos := 0;
+      CustoAdicionais := 0;
 			// insere os adicionais de complementos
 			for c := Low(VenEst.Complementos) to High(VenEst.Complementos) do
 			begin
+				CodAdi := IfThen(VenEst.Complementos[c].Adi > 0, VenEst.Complementos[c].Adi, VenEst.Complementos[c].Codigo);
 				ComplementoaAux            := TVeAdicionais.Create(FConnection, FTransaction);
 				try
 					ComplementoaAux.Codigo     := IncrementaGenerator('GEN_VE_ADICIONAIS');
 					ComplementoaAux.Ve         := CodigoVenEst;
-					ComplementoaAux.Adi        := VenEst.Complementos[c].Adi;
+					ComplementoaAux.Adi        := CodAdi;
 					ComplementoaAux.Quantidade := VenEst.Complementos[c].Quantidade;
 					ComplementoaAux.Valor      := VenEst.Complementos[c].Valor;
 					ComplementoaAux.SalvaNoBanco(1);
-					SomaComplementos := SomaComplementos + (VenEst.Complementos[c].Quantidade * VenEst.Complementos[c].Valor);
+					SomaComplementos := SomaComplementos + (VenEst.Complementos[c].Quantidade * VenEst.Complementos[c].Valor * QtdSegura);
+					CustoAdicionais := CustoAdicionais +
+            TProducaoService.BaixarInsumosECalcularCusto(
+              FConnection, FTransaction, 'ADICIONAL', CodAdi,
+              Max(1, VenEst.Complementos[c].Quantidade) * QtdSegura,
+              FVenda.Codigo, UsouFichaExtra
+            );
 				finally
 					ComplementoaAux.DisposeOf;
 				end;
 			end;
       SomaOpcoes := 0;
+      CustoOpcoes := 0;
 			// insere as opcoes
 			for o := Low(VenEst.OpcoesNivel) to High(VenEst.OpcoesNivel) do
 			begin
+				CodOpcaoReal := IfThen(VenEst.OpcoesNivel[o].CodOpcao > 0, VenEst.OpcoesNivel[o].CodOpcao, VenEst.OpcoesNivel[o].Codigo);
 				OpcoesAux                := TVeOpcoes.Create(FConnection, FTransaction);
 				try
 					OpcoesAux.Codigo         := IncrementaGenerator('GEN_VE_OPCOES');
@@ -368,11 +384,37 @@ begin
 					OpcoesAux.Quantidade     := VenEst.OpcoesNivel[o].Quantidade;
 					OpcoesAux.ValorAdicional := VenEst.OpcoesNivel[o].ValorAdicional;
 					OpcoesAux.SalvaNoBanco(1);
-					SomaOpcoes := SomaOpcoes + (VenEst.OpcoesNivel[o].Quantidade * VenEst.OpcoesNivel[o].ValorAdicional);
+					if TemVoOp and (CodOpcaoReal > 0) then
+					begin
+						Query := CriarQuery;
+						try
+							Query.SQL.Add('UPDATE VE_OPCOES SET VO_OP = :OP WHERE VO_CODIGO = :COD');
+							Query.ParamByName('OP').AsInteger := CodOpcaoReal;
+							Query.ParamByName('COD').AsInteger := OpcoesAux.Codigo;
+							Query.ExecSQL;
+						finally
+							Query.DisposeOf;
+						end;
+					end;
+					SomaOpcoes := SomaOpcoes + (VenEst.OpcoesNivel[o].Quantidade * VenEst.OpcoesNivel[o].ValorAdicional * QtdSegura);
+					CustoOpcoes := CustoOpcoes +
+            TProducaoService.BaixarInsumosECalcularCusto(
+              FConnection, FTransaction, 'OPCAO', CodOpcaoReal,
+              Max(1, VenEst.OpcoesNivel[o].Quantidade) * QtdSegura,
+              FVenda.Codigo, UsouFichaExtra
+            );
 				finally
 					OpcoesAux.DisposeOf;
 				end;
 			end;
+
+      // Calcula custo e baixa insumos da ficha tecnica do produto (se existir)
+      UsouFichaProduto := False;
+      CustoProduto := TProducaoService.BaixarInsumosECalcularCusto(
+        FConnection, FTransaction, 'PRODUTO', VenEst.Pro, QtdSegura, FVenda.Codigo, UsouFichaProduto
+      );
+      CustoTotalLinha := RoundTo(CustoProduto + CustoOpcoes + CustoAdicionais, -4);
+
 			// clona o venEst e salva no banco
 			VenEstAux := TVenEst.Create(FConnection, FTransaction);
 			try
@@ -401,8 +443,18 @@ begin
 				VenEstAux.Valor_partida   := VenEst.Valor_partida;
 				VenEstAux.Variacao        := VenEst.Variacao;
 				VenEstAux.Usu             := VenEst.Usu;
-      	if VenEstAux.Valor = 0 then        
+      	if (VenEstAux.Valor = 0) and (VenEstAux.Desconto = 0) then
 	      	VenEstAux.Valor := SomaComplementos + SomaOpcoes;
+        if CustoTotalLinha > 0 then
+        begin
+          VenEstAux.Valorcm := CustoTotalLinha;
+          VenEstAux.Valorc  := CustoTotalLinha;
+        end;
+        VenEstAux.Lucro := RoundTo((VenEstAux.Valor + SomaComplementos) - CustoTotalLinha, -4);
+        VenEst.Valor    := VenEstAux.Valor;
+        VenEst.Valorcm  := VenEstAux.Valorcm;
+        VenEst.Valorc   := VenEstAux.Valorc;
+        VenEst.Lucro    := VenEstAux.Lucro;
 				VenEstAux.SalvaNoBanco(1);
 			finally
 				VenEstAux.DisposeOf;
@@ -422,11 +474,11 @@ begin
 					HisPro.Origem        := copy('VD - ' + FVenda.Nome_cliente, 1, 30);
 					HisPro.Doc           := FVenda.Codigo.ToString;
 					HisPro.Quantidade    := VenEst.Quantidade;
-					HisPro.ValorC        := Arredondar(VenEst.ValorC / VenEst.Quantidade, 2);
-					HisPro.ValorV        := Arredondar(VenEst.Valor / VenEst.Quantidade, 2);
-					HisPro.ValorCM       := Arredondar(VenEst.ValorCM / VenEst.Quantidade, 2);
-					HisPro.ValorOp       := Arredondar(VenEst.Valorl / VenEst.Quantidade, 2);
-					HisPro.ValorM        := Arredondar(VenEst.Valorf / VenEst.Quantidade, 2);
+					HisPro.ValorC        := Arredondar(VenEst.ValorC / QtdSegura, 2);
+					HisPro.ValorV        := Arredondar(VenEst.Valor / QtdSegura, 2);
+					HisPro.ValorCM       := Arredondar(VenEst.ValorCM / QtdSegura, 2);
+					HisPro.ValorOp       := Arredondar(VenEst.Valorl / QtdSegura, 2);
+					HisPro.ValorM        := Arredondar(VenEst.Valorf / QtdSegura, 2);
 					HisPro.Tipo          := 'S';
 					HisPro.Tipo2         := 1;
 					HisPro.QuantAnterior := Quantidadea;
@@ -435,7 +487,7 @@ begin
 					HisPro.DisposeOf;
 				end;
 				// DA BAIXA NO ESTOQUE E VERIFICA SE O PRODUTO PODE RECEBER O AJUSTE
-				if not Produto.Estoque.Contains('N') then
+				if (not UsouFichaProduto) and (not Produto.Estoque.Contains('N')) then
 				begin
 					Query := CriarQuery;
 					try

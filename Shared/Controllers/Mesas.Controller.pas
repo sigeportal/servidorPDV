@@ -18,6 +18,7 @@ type
     class procedure Registrar;
     class procedure Get(Req: THorseRequest; Res: THorseResponse; Next: TProc);
     class procedure GetMesa(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+    class procedure GetFichas(Req: THorseRequest; Res: THorseResponse; Next: TProc);
     class procedure Post(Req: THorseRequest; Res: THorseResponse; Next: TProc);
     class procedure Put(Req: THorseRequest; Res: THorseResponse; Next: TProc);
     class procedure CriaMesa(Req: THorseRequest; Res: THorseResponse);
@@ -57,11 +58,33 @@ var
   Dados: TDataSource;
 begin
   Dados := TDataSource.Create(nil);
-  Query := TDatabase.Query;
-  Query.Clear;
-  Query.Open('SELECT M.*, COM_VALOR MES_VALOR FROM MESAS M LEFT JOIN COMANDAS ON COM_MESA = MES_CODIGO AND COM_DATA_FECHAMENTO IS NULL');
-  Dados.DataSet := Query.DataSet;
-  Res.Send<TJSONArray>(Dados.DataSet.ToJSONArray);
+  try
+    Query := TDatabase.Query;
+    Query.Clear;
+    Query.Open(
+      'SELECT ' +
+      '  M.MES_CODIGO, ' +
+      '  M.MES_NOME, ' +
+      '  CASE ' +
+      '    WHEN M.MES_ESTADO = ''E'' THEN ''E'' ' +
+      '    WHEN (SELECT COUNT(*) FROM PEDIDOS P WHERE P.PED_MESA = M.MES_CODIGO AND P.PED_STATUS_FICHA = ''E'') > 0 THEN ''E'' ' +
+      '    WHEN (SELECT COUNT(*) FROM PEDIDOS P WHERE P.PED_MESA = M.MES_CODIGO AND P.PED_STATUS_FICHA = ''A'') > 0 THEN ''O'' ' +
+      '    WHEN (SELECT COUNT(*) FROM COMANDAS C WHERE C.COM_MESA = M.MES_CODIGO AND C.COM_DATA_FECHAMENTO IS NULL) > 0 THEN ''O'' ' +
+      '    ELSE M.MES_ESTADO ' +
+      '  END AS MES_ESTADO, ' +
+      '  (SELECT COUNT(*) FROM PEDIDOS P WHERE P.PED_MESA = M.MES_CODIGO AND P.PED_STATUS_FICHA = ''A'') AS MES_QTD_FICHAS, ' +
+      '  ( ' +
+      '    COALESCE((SELECT SUM(COALESCE(PE.PE_VALOR, 0)) FROM PEDIDOS P JOIN PED_EST PE ON PE.PE_PED = P.PED_CODIGO WHERE P.PED_MESA = M.MES_CODIGO AND P.PED_STATUS_FICHA = ''A'' AND COALESCE(PE.PE_ESTADO, ''A'') <> ''E''), 0) + ' +
+      '    COALESCE((SELECT SUM(C.COM_VALOR) FROM COMANDAS C WHERE C.COM_MESA = M.MES_CODIGO AND C.COM_DATA_FECHAMENTO IS NULL), 0) ' +
+      '  ) AS MES_VALOR ' +
+      'FROM MESAS M ' +
+      'ORDER BY M.MES_CODIGO'
+    );
+    Dados.DataSet := Query.DataSet;
+    Res.Send<TJSONArray>(Dados.DataSet.ToJSONArray);
+  finally
+    Dados.Free;
+  end;
 end;
 
 class procedure TMesasController.GetMesa(Req: THorseRequest; Res: THorseResponse; Next: TProc);
@@ -74,15 +97,126 @@ begin
   begin
     CodMesa := Req.Params.Items['codigo'].ToInteger();
     Dados := TDataSource.Create(nil);
+    try
+      Query := TDatabase.Query;
+      Query.Clear;
+      Query.Open(
+        'SELECT ' +
+        '  M.MES_CODIGO, ' +
+        '  M.MES_NOME, ' +
+        '  CASE ' +
+        '    WHEN M.MES_ESTADO = ''E'' THEN ''E'' ' +
+        '    WHEN (SELECT COUNT(*) FROM PEDIDOS P WHERE P.PED_MESA = M.MES_CODIGO AND P.PED_STATUS_FICHA = ''E'') > 0 THEN ''E'' ' +
+        '    WHEN (SELECT COUNT(*) FROM PEDIDOS P WHERE P.PED_MESA = M.MES_CODIGO AND P.PED_STATUS_FICHA = ''A'') > 0 THEN ''O'' ' +
+        '    WHEN (SELECT COUNT(*) FROM COMANDAS C WHERE C.COM_MESA = M.MES_CODIGO AND C.COM_DATA_FECHAMENTO IS NULL) > 0 THEN ''O'' ' +
+        '    ELSE M.MES_ESTADO ' +
+        '  END AS MES_ESTADO, ' +
+        '  (SELECT COUNT(*) FROM PEDIDOS P WHERE P.PED_MESA = M.MES_CODIGO AND P.PED_STATUS_FICHA = ''A'') AS MES_QTD_FICHAS, ' +
+        '  ( ' +
+        '    COALESCE((SELECT SUM(COALESCE(PE.PE_VALOR, 0)) FROM PEDIDOS P JOIN PED_EST PE ON PE.PE_PED = P.PED_CODIGO WHERE P.PED_MESA = M.MES_CODIGO AND P.PED_STATUS_FICHA = ''A'' AND COALESCE(PE.PE_ESTADO, ''A'') <> ''E''), 0) + ' +
+        '    COALESCE((SELECT SUM(C.COM_VALOR) FROM COMANDAS C WHERE C.COM_MESA = M.MES_CODIGO AND C.COM_DATA_FECHAMENTO IS NULL), 0) ' +
+        '  ) AS MES_VALOR ' +
+        'FROM MESAS M ' +
+        'WHERE M.MES_CODIGO = ' + CodMesa.ToString
+      );
+      Dados.DataSet := Query.DataSet;
+      Res.Send<TJSONObject>(Dados.DataSet.ToJSONObject);
+    finally
+      Dados.Free;
+    end;
+  end else
+    Res.Send(TJSONObject.Create.AddPair('error', 'Codigo da mesa nao informado')).Status(THTTPStatus.BadRequest);
+end;
+
+class procedure TMesasController.GetFichas(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+var
+  Query: iQuery;
+  CodMesa: Integer;
+  aJson: TJSONArray;
+  oJson: TJSONObject;
+  NumFicha, QtdItens, CodPedido, CodigoMesa: Integer;
+  ValorTot: Currency;
+  NomeCli, NomeMesa, HoraAbertura: string;
+begin
+  if Req.Params.Count > 0 then
+  begin
+    CodMesa := Req.Params.Items['codigo'].ToInteger();
     Query := TDatabase.Query;
     Query.Clear;
-    Query.Add('SELECT M.*, COM_VALOR MES_VALOR FROM MESAS M LEFT JOIN COMANDAS ON COM_MESA = MES_CODIGO AND COM_DATA_FECHAMENTO IS NULL WHERE MES_CODIGO = :CODIGO');
-    Query.AddParam('CODIGO', CodMesa);
-    Query.Open();
-    Dados.DataSet := Query.DataSet;
-    Res.Send<TJSONObject>(Dados.DataSet.ToJSONObject);
+    Query.Open(
+      'SELECT ' +
+      '  P.PED_CODIGO, ' +
+      '  COALESCE(P.PED_FICHA, 0) AS NUM_FICHA, ' +
+      '  P.PED_MESA, ' +
+      '  M.MES_NOME, ' +
+      '  COALESCE(P.PED_CLI_NOME, ''(Cliente nao informado)'') AS CLI_NOME, ' +
+      '  P.PED_HORA, ' +
+      '  (SELECT COUNT(*) FROM PED_EST PE WHERE PE.PE_PED = P.PED_CODIGO AND COALESCE(PE.PE_ESTADO, ''A'') <> ''E'') AS QTD_ITENS, ' +
+      '  COALESCE((SELECT SUM(PE.PE_VALOR) FROM PED_EST PE WHERE PE.PE_PED = P.PED_CODIGO AND COALESCE(PE.PE_ESTADO, ''A'') <> ''E''), 0) AS VALOR_TOTAL, ' +
+      '  COALESCE(P.PED_STATUS_FICHA, ''A'') AS STATUS_FICHA ' +
+      'FROM PEDIDOS P ' +
+      'LEFT JOIN MESAS M ON M.MES_CODIGO = P.PED_MESA ' +
+      'WHERE P.PED_MESA = ' + CodMesa.ToString + ' AND P.PED_STATUS_FICHA IN (''A'', ''E'') ' +
+      'UNION ALL ' +
+      'SELECT ' +
+      '  C.COM_CODIGO, ' +
+      '  COALESCE(C.COM_COMANDA, 0) AS NUM_FICHA, ' +
+      '  C.COM_MESA, ' +
+      '  M.MES_NOME, ' +
+      '  ''(Cliente nao informado)'' AS CLI_NOME, ' +
+      '  C.COM_HORA_ABERTURA, ' +
+      '  (SELECT COUNT(*) FROM COM_PRO CP WHERE CP.CP_COM = C.COM_CODIGO AND COALESCE(CP.CP_ESTADO, ''A'') <> ''E'') AS QTD_ITENS, ' +
+      '  COALESCE(C.COM_VALOR, 0) AS VALOR_TOTAL, ' +
+      '  ''A'' AS STATUS_FICHA ' +
+      'FROM COMANDAS C ' +
+      'LEFT JOIN MESAS M ON M.MES_CODIGO = C.COM_MESA ' +
+      'WHERE C.COM_MESA = ' + CodMesa.ToString + ' AND C.COM_DATA_FECHAMENTO IS NULL AND C.COM_COMANDA > 0 ' +
+      '  AND C.COM_COMANDA NOT IN (SELECT PED_FICHA FROM PEDIDOS WHERE PED_MESA = ' + CodMesa.ToString + ' AND PED_STATUS_FICHA = ''A'') ' +
+      'ORDER BY 2'
+    );
+    aJson := TJSONArray.Create;
+    Query.DataSet.First;
+    while not Query.DataSet.Eof do
+    begin
+      CodPedido  := Query.DataSet.Fields[0].AsInteger;
+      NumFicha   := Query.DataSet.Fields[1].AsInteger;
+      CodigoMesa := Query.DataSet.Fields[2].AsInteger;
+      NomeMesa   := Query.DataSet.Fields[3].AsString;
+      NomeCli    := Query.DataSet.Fields[4].AsString;
+      if NomeCli.Trim.IsEmpty then
+        NomeCli := '(Cliente nao informado)';
+      try
+        HoraAbertura := FormatDateTime('hh:nn', Query.DataSet.Fields[5].AsDateTime);
+      except
+        HoraAbertura := '';
+      end;
+      QtdItens := Query.DataSet.Fields[6].AsInteger;
+      ValorTot := Query.DataSet.Fields[7].AsCurrency;
+
+      oJson := TJSONObject.Create;
+      oJson.AddPair('numeroFicha', TJSONNumber.Create(NumFicha));
+      oJson.AddPair('numeroficha', TJSONNumber.Create(NumFicha));
+      oJson.AddPair('codigoPedido', TJSONNumber.Create(CodPedido));
+      oJson.AddPair('codigoMesa', TJSONNumber.Create(CodigoMesa));
+      oJson.AddPair('nomeMesa', NomeMesa);
+      oJson.AddPair('nomeCliente', NomeCli);
+      oJson.AddPair('qtdItens', TJSONNumber.Create(QtdItens));
+      oJson.AddPair('qtditens', TJSONNumber.Create(QtdItens));
+      oJson.AddPair('valorTotal', TJSONNumber.Create(ValorTot));
+      oJson.AddPair('valortotal', TJSONNumber.Create(ValorTot));
+      oJson.AddPair('horaAbertura', HoraAbertura);
+      oJson.AddPair('statusFicha', Query.DataSet.Fields[8].AsString);
+      if Query.DataSet.Fields[8].AsString = 'E' then
+        oJson.AddPair('statusDescricao', 'Excluida - Conferir')
+      else
+        oJson.AddPair('statusDescricao', 'Aberta');
+      aJson.AddElement(oJson);
+
+      Query.DataSet.Next;
+    end;
+    Res.Send<TJSONArray>(aJson);
   end else
-    Res.Send(TJSONObject.Create.AddPair('error', 'Codigo da mesa não informado')).Status(THTTPStatus.BadRequest);
+    Res.Send(TJSONObject.Create.AddPair('error', 'Codigo da mesa nao informado')).Status(THTTPStatus.BadRequest);
 end;
 
 class procedure TMesasController.Post(Req: THorseRequest; Res: THorseResponse; Next: TProc);
@@ -175,12 +309,14 @@ begin
   THorse.Post('/v1/mesas', CriaMesa);
   THorse.Post('/v1/mesas/:codigo/status/:status', Post);
   THorse.Get('/v1/mesas/:codigo', GetMesa);
+  THorse.Get('/v1/mesas/:codigo/fichas', GetFichas);
   THorse.Put('/v1/mesas/:codigo', Put);
   //
   THorse.Get('/Mesas', Get);
   THorse.Post('/Mesas', CriaMesa);
   THorse.Post('/Mesas/:codigo/status/:status', Post);
   THorse.Get('/Mesas/:codigo', GetMesa);
+  THorse.Get('/Mesas/:codigo/fichas', GetFichas);
   THorse.Put('/Mesas/:codigo', Put);
 end;
 

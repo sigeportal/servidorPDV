@@ -6,7 +6,7 @@
         <MainSource>ServidorConsole.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Release</Config>
-        <Platform Condition="'$(Platform)'==''">Linux64</Platform>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>129</TargetedPlatforms>
         <AppType>Console</AppType>
     </PropertyGroup>
@@ -112,7 +112,7 @@
         <Manifest_File>(None)</Manifest_File>
         <DCC_ExeOutput>./dist/DEV</DCC_ExeOutput>
         <Debugger_IncludeSystemVars>true</Debugger_IncludeSystemVars>
-        <Debugger_EnvVars>CAMINHO_BD=D:\PROJETOS\Lanchonete\Dados\REI_DA_GARAPA\PRINCIPAL.FDB;$(Debugger_EnvVars)</Debugger_EnvVars>
+        <Debugger_EnvVars>CAMINHO_BD=D:\PROJETOS\Lanchonete\Dados\REI_DA_GARAPA\PRINCIPAL.FDB;PORT=9000;$(Debugger_EnvVars)</Debugger_EnvVars>
     </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
@@ -167,6 +167,10 @@
         <DCCReference Include="..\Shared\Model\Grades\UnitGrades.Model.pas"/>
         <DCCReference Include="..\Shared\Model\Adicionais\UnitAdicionais.Model.pas"/>
         <DCCReference Include="..\Shared\Model\Tamanhos\UnitTamanhos.Model.pas"/>
+        <DCCReference Include="..\Shared\Services\UnitProducao.Service.pas"/>
+        <DCCReference Include="..\Shared\Services\UnitNFCeParser.Service.pas"/>
+        <DCCReference Include="..\Shared\Controllers\NFCe.Controller.pas"/>
+        <DCCReference Include="..\Shared\Controllers\Producao.Controller.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

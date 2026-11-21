@@ -35,10 +35,12 @@ type
   TModelComanda = class
   private
     FMesa: integer;
+    FComanda: integer;
     FValor: Currency;
     FItens: TArray<TModelItens>;
   public
     property Mesa: integer read FMesa write FMesa;
+    property Comanda: integer read FComanda write FComanda;
     property Valor: Currency read FValor write FValor;
     property Itens: TArray<TModelItens> read FItens write FItens;
     class function FromJsonString(JsonString: string): TModelComanda;

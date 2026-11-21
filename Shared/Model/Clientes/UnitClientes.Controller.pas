@@ -1,4 +1,4 @@
-unit UnitClientes.Controller;
+Ôªøunit UnitClientes.Controller;
 
 interface
 uses
@@ -14,6 +14,7 @@ type
     class procedure Router;
     class procedure Get(Req: THorseRequest; Res: THorseResponse);
     class procedure GetForID(Req: THorseRequest; Res: THorseResponse);
+    class procedure GetCredito(Req: THorseRequest; Res: THorseResponse);
     class procedure Post(Req: THorseRequest; Res: THorseResponse);
     class procedure Put(Req: THorseRequest; Res: THorseResponse);
     class procedure Delete(Req: THorseRequest; Res: THorseResponse);
@@ -143,6 +144,93 @@ begin
   end;
 end;
 
+class procedure TClientesController.GetCredito(Req: THorseRequest; Res: THorseResponse);
+var
+  QueryCli, QueryRec: iQuery;
+  Id: Integer;
+  Nome: string;
+  Limite, TotalAberto, SaldoDisponivel: Currency;
+  DataObj, TituloObj: TJSONObject;
+  TitulosArr: TJSONArray;
+begin
+  if not TryStrToInt(Req.Params.Items['id'], Id) then
+  begin
+    Res.Status(THTTPStatus.BadRequest)
+      .Send<TJSONObject>(TJSONObject.Create.AddPair('error', 'ID do cliente invalido'));
+    Exit;
+  end;
+
+  QueryCli := TDatabase.Query;
+  QueryRec := TDatabase.Query;
+  DataObj := TJSONObject.Create;
+  TitulosArr := TJSONArray.Create;
+  try
+    QueryCli.Clear;
+    QueryCli.Add('SELECT CLI_CODIGO, CLI_NOME, COALESCE(CLI_LIMITE, 0) CLI_LIMITE FROM CLIENTES WHERE CLI_CODIGO = :CLI');
+    QueryCli.AddParam('CLI', Id);
+    QueryCli.Open;
+
+    if QueryCli.DataSet.IsEmpty then
+    begin
+      DataObj.Free;
+      TitulosArr.Free;
+      Res.Status(THTTPStatus.NotFound)
+        .Send<TJSONObject>(TJSONObject.Create.AddPair('error', 'Cliente nao encontrado'));
+      Exit;
+    end;
+
+    Nome := QueryCli.DataSet.FieldByName('CLI_NOME').AsString;
+    Limite := QueryCli.DataSet.FieldByName('CLI_LIMITE').AsCurrency;
+
+    QueryRec.Clear;
+    QueryRec.Add('SELECT R.REC_CODIGO, V.VEN_CODIGO, R.REC_DUPLICATA, V.VEN_DATA, R.REC_VENCIMENTO,');
+    QueryRec.Add('       (R.REC_VALOR + COALESCE(R.REC_JUROS, 0) - COALESCE(R.REC_DESCONTOS, 0)) VLR_ABERTO,');
+    QueryRec.Add('       COALESCE(R.REC_TIPO, '''') REC_TIPO');
+    QueryRec.Add('FROM VENDAS V');
+    QueryRec.Add('JOIN RECEBIMENTOS R ON V.VEN_FAT = R.REC_FAT');
+    QueryRec.Add('WHERE V.VEN_CLI = :CLI');
+    QueryRec.Add('  AND R.REC_ESTADO = 1');
+    QueryRec.Add('  AND (R.REC_SITUACAO >= 0 AND R.REC_SITUACAO < 2)');
+    QueryRec.Add('  AND V.VEN_DATAC = ''01/01/1900''');
+    QueryRec.Add('ORDER BY R.REC_VENCIMENTO ASC');
+    QueryRec.AddParam('CLI', Id);
+    QueryRec.Open;
+
+    TotalAberto := 0;
+    QueryRec.DataSet.First;
+    while not QueryRec.DataSet.Eof do
+    begin
+      TotalAberto := TotalAberto + QueryRec.DataSet.FieldByName('VLR_ABERTO').AsCurrency;
+
+      TituloObj := TJSONObject.Create;
+      TituloObj.AddPair('codigo', TJSONNumber.Create(QueryRec.DataSet.FieldByName('REC_CODIGO').AsInteger));
+      TituloObj.AddPair('venda', TJSONNumber.Create(QueryRec.DataSet.FieldByName('VEN_CODIGO').AsInteger));
+      TituloObj.AddPair('duplicata', QueryRec.DataSet.FieldByName('REC_DUPLICATA').AsString);
+      TituloObj.AddPair('emissao', FormatDateTime('yyyy-mm-dd', QueryRec.DataSet.FieldByName('VEN_DATA').AsDateTime));
+      TituloObj.AddPair('vencimento', FormatDateTime('yyyy-mm-dd', QueryRec.DataSet.FieldByName('REC_VENCIMENTO').AsDateTime));
+      TituloObj.AddPair('valor', TJSONNumber.Create(QueryRec.DataSet.FieldByName('VLR_ABERTO').AsCurrency));
+      TituloObj.AddPair('tipo', QueryRec.DataSet.FieldByName('REC_TIPO').AsString);
+      TitulosArr.AddElement(TituloObj);
+
+      QueryRec.DataSet.Next;
+    end;
+
+    SaldoDisponivel := Limite - TotalAberto;
+
+    DataObj.AddPair('codigo', TJSONNumber.Create(Id));
+    DataObj.AddPair('nome', Nome);
+    DataObj.AddPair('limite', TJSONNumber.Create(Limite));
+    DataObj.AddPair('total_aberto', TJSONNumber.Create(TotalAberto));
+    DataObj.AddPair('saldo_disponivel', TJSONNumber.Create(SaldoDisponivel));
+    DataObj.AddPair('titulos_abertos', TitulosArr);
+
+    Res.Send<TJSONObject>(DataObj);
+  finally
+    QueryCli := nil;
+    QueryRec := nil;
+  end;
+end;
+
 class procedure TClientesController.Post(Req: THorseRequest; Res: THorseResponse);
 var Clientes: TClientes;
 begin
@@ -186,6 +274,11 @@ begin
           .Get(GetForID)
           .Delete(Delete)
         .&End
+        .Group
+        .Prefix('/v1')
+        .Route('/clientes/:id/credito')
+          .Get(GetCredito)
+        .&End;
 end;
 
 initialization
@@ -194,7 +287,7 @@ initialization
     .Path('clientes')
       .Tag('Clientes')
       .GET('Lista Todos(as)', 'Lista todos(as) os(as) Clientess')
-        .AddResponse(200, 'OperaÁ„o bem Sucedida')
+        .AddResponse(200, 'Opera√ß√£o bem Sucedida')
           .Schema(TClientes)
           .IsArray(True)
         .&End
@@ -237,10 +330,10 @@ initialization
           .Required(True)
           .Schema(SWAG_INTEGER)
         .&End
-        .AddResponse(200, 'OperaÁ„o bem Sucedida')
+        .AddResponse(200, 'Opera√ß√£o bem Sucedida')
           .Schema(TClientes)
         .&End
-        .AddResponse(404, 'Clientes n„o encontrado(a)').&End
+        .AddResponse(404, 'Clientes n√£o encontrado(a)').&End
         .AddResponse(400, 'BadRequest')
           .Schema(TAPIError)
         .&End
@@ -251,10 +344,24 @@ initialization
           .Required(True)
           .Schema(SWAG_INTEGER)
         .&End
-        .AddResponse(404, 'Clientes n„o encontrado(a)').&End
+        .AddResponse(404, 'Clientes n√£o encontrado(a)').&End
         .AddResponse(400, 'BadRequest')
           .Schema(TAPIError)
         .&End
+        .AddResponse(500).&End
+      .&End
+    .&End
+  .&End
+  .BasePath('v1')
+    .Path('clientes/{id}/credito')
+      .Tag('Clientes')
+      .GET('Consulta limite e saldo a receber do cliente')
+        .AddParamPath('id', 'Id do cliente para consultar credito')
+          .Required(True)
+          .Schema(SWAG_INTEGER)
+        .&End
+        .AddResponse(200, 'Operacao bem sucedida').&End
+        .AddResponse(404, 'Cliente nao encontrado').&End
         .AddResponse(500).&End
       .&End
     .&End

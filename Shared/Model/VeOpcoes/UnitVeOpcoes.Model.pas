@@ -1,4 +1,4 @@
-unit UnitVeOpcoes.Model;
+﻿unit UnitVeOpcoes.Model;
 
 interface
 
@@ -20,6 +20,7 @@ type
 		FCodigo        : integer;
 		FVe            : integer;
 		FCodNivel      : integer;
+		FCodOpcao      : integer;
 		FQuantidade    : double;
 		FValorAdicional: Currency;
 	public
@@ -30,6 +31,7 @@ type
 		property Ve: integer read FVe write FVe;
 		[TCampo('VO_NIVEL', 'INTEGER')]
 		property CodNivel: integer read FCodNivel write FCodNivel;
+		property CodOpcao: integer read FCodOpcao write FCodOpcao;
 		[TCampo('VO_QUANTIDADE', 'NUMERIC(9,2)')]
 		property Quantidade: double read FQuantidade write FQuantidade;
 		[TCampo('VO_VALOR', 'NUMERIC(9,2)')]
@@ -48,6 +50,7 @@ begin
 	Result.Codigo         := Self.Codigo;
 	Result.Ve             := Self.Ve;
 	Result.CodNivel       := Self.CodNivel;
+	Result.CodOpcao       := Self.CodOpcao;
 	Result.Quantidade     := Self.Quantidade;
 	Result.ValorAdicional := Self.ValorAdicional;
 end;

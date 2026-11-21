@@ -1,4 +1,4 @@
-unit Produtos.Controller;
+Ôªøunit Produtos.Controller;
 
 interface
 
@@ -39,6 +39,7 @@ uses
 	UnitFuncoesComuns, 
   UnitTabela.Helpers,
   UnitDatabase,
+  UnitProducao.Service,
   UnitProdutos.Model, UnitGrades.Model;
 
 class procedure TProdutosController.Get(Req: THorseRequest; Res: THorseResponse; Next: TProc);
@@ -46,59 +47,87 @@ var
   Query    : iQuery;
   Categoria: integer;
   Busca: string;
+  TipoFiltro: string;
+  TipoNorm: string;
+  IncluirMP: Boolean;
   aJson    : TJSONArray;
   oJson    : TJSONObject;
   grupo: Integer;
-  Grades: TGrades;
 begin
-//	Grades := TGrades.Create(TDatabase.Connection);
-//  try
-//    Grades.CriaTabela;
-//  finally
-//    Grades.DisposeOf;
-//  end;
   Query := TDatabase.Query;
   aJson := TJSONArray.Create;
   Query.Clear;
   Busca := Trim(Req.Query.Items['busca']);
+  IncluirMP := Req.Query.ContainsKey('incluir_mp') and
+    SameText(Trim(Req.Query.Items['incluir_mp']), 'true');
+  TipoFiltro := '';
+  if Req.Query.ContainsKey('tipo') then
+    TipoFiltro := Trim(Req.Query.Items['tipo']);
 
-  Query.Add('SELECT PRO_CODIGO, PRO_NOME, PRO_CODBARRA, PRO_VALORV, GRU_CODIGO, GRU_G1, G1_NOME,');
-  Query.Add('(SELECT FIRST 1 GRA_CODIGO FROM GRADES WHERE GRA_PRO = PRO_CODIGO) GRA_CODIGO');
-  Query.Add('FROM PRODUTOS JOIN GRUPOS ON PRO_GRU = GRU_CODIGO JOIN GRUPO_1 ON G1_CODIGO = GRU_G1');
-  Query.Add('WHERE PRO_ESTADO = ''ATIVO''');
+  Query.Add('SELECT P.PRO_CODIGO, P.PRO_NOME, P.PRO_CODBARRA, P.PRO_VALORV,');
+  Query.Add('       COALESCE(P.PRO_VALORC, 0) PRO_VALORC, COALESCE(P.PRO_VALORCM, 0) PRO_VALORCM,');
+  Query.Add('       COALESCE(P.PRO_QUANTIDADE, 0) PRO_QUANTIDADE,');
+  Query.Add('       COALESCE(P.PRO_TIPO, '''') PRO_TIPO, COALESCE(P.PRO_EMBALAGEM, '''') PRO_EMBALAGEM,');
+  Query.Add('       COALESCE(G.GRU_CODIGO, P.PRO_GRU, 0) GRU_CODIGO,');
+  Query.Add('       COALESCE(G.GRU_G1, 0) GRU_G1, COALESCE(G1.G1_NOME, '''') G1_NOME,');
+  Query.Add('       (SELECT FIRST 1 GRA_CODIGO FROM GRADES WHERE GRA_PRO = P.PRO_CODIGO) GRA_CODIGO');
+  Query.Add('FROM PRODUTOS P');
+  Query.Add('LEFT JOIN GRUPOS G ON P.PRO_GRU = G.GRU_CODIGO');
+  Query.Add('LEFT JOIN GRUPO_1 G1 ON G1.G1_CODIGO = G.GRU_G1');
+  Query.Add('WHERE COALESCE(P.PRO_ESTADO, ''ATIVO'') = ''ATIVO''');
+
+  if not TipoFiltro.IsEmpty then
+  begin
+    if not SameText(TipoFiltro, 'TODOS') then
+    begin
+      TipoNorm := TProducaoService.NormalizarTipoProduto(TipoFiltro);
+      Query.Add('AND COALESCE(NULLIF(UPPER(TRIM(P.PRO_TIPO)), ''''), ''REVENDA'') = :TIPO_PROD');
+      Query.AddParam('TIPO_PROD', TipoNorm);
+    end;
+  end
+  else if not IncluirMP then
+  begin
+    Query.Add('AND COALESCE(NULLIF(UPPER(TRIM(P.PRO_TIPO)), ''''), ''REVENDA'') NOT IN (''MP'', ''MATERIA_PRIMA'', ''MATERIA-PRIMA'')');
+  end;
 
   if Req.Query.Count > 0 then
   begin
     if Req.Query.ContainsKey('categoria') then
     begin
       Categoria := Req.Query.Items['categoria'].ToInteger;
-      Query.Add('AND GRU_CODIGO = :SUBGRUPO');
+      Query.Add('AND COALESCE(G.GRU_CODIGO, P.PRO_GRU) = :SUBGRUPO');
       Query.AddParam('SUBGRUPO', Categoria);
     end;
     if Req.Query.ContainsKey('grupo') then
     begin
       grupo := Req.Query.Items['grupo'].ToInteger;
-      Query.Add('AND GRU_G1 = :GRUPO');
+      Query.Add('AND G.GRU_G1 = :GRUPO');
       Query.AddParam('GRUPO', grupo);
     end;
   end;
 
   if Busca <> '' then
   begin
-    Query.Add('AND (UPPER(PRO_NOME) LIKE :BUSCA OR CAST(PRO_CODIGO AS VARCHAR(20)) LIKE :BUSCA OR UPPER(PRO_CODBARRA) LIKE :BUSCA)');
+    Query.Add('AND (UPPER(P.PRO_NOME) LIKE :BUSCA OR CAST(P.PRO_CODIGO AS VARCHAR(20)) LIKE :BUSCA OR UPPER(COALESCE(P.PRO_CODBARRA, '''')) LIKE :BUSCA)');
     Query.AddParam('BUSCA', '%' + UpperCase(Busca) + '%');
   end;
 
-  Query.Add('ORDER BY PRO_NOME');
+  Query.Add('ORDER BY P.PRO_NOME');
   Query.Open();
   Query.DataSet.First;
   while not Query.DataSet.Eof do
   begin
+    TipoNorm := TProducaoService.NormalizarTipoProduto(Query.DataSet.FieldByName('PRO_TIPO').AsString);
     oJson     := TJSONObject.Create;
     oJson.AddPair('codigo', TJSONNumber.Create(Query.DataSet.FieldByName('PRO_CODIGO').AsInteger));
     oJson.AddPair('nome', Query.DataSet.FieldByName('PRO_NOME').AsString);
     oJson.AddPair('codbarra', Query.DataSet.FieldByName('PRO_CODBARRA').AsString);
     oJson.AddPair('valor', TJSONNumber.Create(Query.DataSet.FieldByName('PRO_VALORV').AsCurrency));
+    oJson.AddPair('valorc', TJSONNumber.Create(Query.DataSet.FieldByName('PRO_VALORC').AsFloat));
+    oJson.AddPair('valorcm', TJSONNumber.Create(Query.DataSet.FieldByName('PRO_VALORCM').AsFloat));
+    oJson.AddPair('quantidade', TJSONNumber.Create(Query.DataSet.FieldByName('PRO_QUANTIDADE').AsFloat));
+    oJson.AddPair('tipo', TipoNorm);
+    oJson.AddPair('unidade', TProducaoService.NormalizarUnidade(Query.DataSet.FieldByName('PRO_EMBALAGEM').AsString));
     oJson.AddPair('categoria', TJSONNumber.Create(Query.DataSet.FieldByName('GRU_CODIGO').AsInteger));
     oJson.AddPair('grade', TJSONNumber.Create(Query.DataSet.FieldByName('GRA_CODIGO').AsInteger));
     oJson.AddPair('grupo', TJSONNumber.Create(Query.DataSet.FieldByName('GRU_G1').AsInteger));
@@ -159,7 +188,7 @@ begin
       Res.Send<TJSONObject>(oJson);
     end;
   end else
-    Res.Send<TJSONObject>(TJSONObject.Create.AddPair('error', 'Categoria n„o informada')).Status(THTTPStatus.BadRequest);
+    Res.Send<TJSONObject>(TJSONObject.Create.AddPair('error', 'Categoria n√£o informada')).Status(THTTPStatus.BadRequest);
 end;
 
 class procedure TProdutosController.GetFotoProduto(Req: THorseRequest; Res: THorseResponse; Next: TProc);
@@ -190,7 +219,7 @@ begin
       Res.Send<TJSONObject>(oJson);
     end;
   end else
-    Res.Send<TJSONObject>(TJSONObject.Create.AddPair('error', 'Codigo do produto n„o informado')).Status(THTTPStatus.BadRequest);
+    Res.Send<TJSONObject>(TJSONObject.Create.AddPair('error', 'Codigo do produto n√£o informado')).Status(THTTPStatus.BadRequest);
 end;
 
 class procedure TProdutosController.GetGradeProduto(Req: THorseRequest;
@@ -263,13 +292,20 @@ var
   oJson    : TJSONObject;
   CodPro: Integer;
 begin
+  if not TryStrToInt(Req.Params.Items['codigo'], Codigo) then
+  begin
+    Res.Send<TJSONObject>(TJSONObject.Create.AddPair('message', 'Codigo invalido')).Status(THTTPStatus.BadRequest);
+    Exit;
+  end;
   Query := TDatabase.Query;
   Query.Clear;
-  Codigo := Req.Params.Items['codigo'].ToInteger;
-  Query.Add('SELECT PRO_CODIGO, PRO_NOME, PRO_CODBARRA, PRO_VALORV, PRO_GRU, GRU_G1, G1_NOME,');
-  Query.Add('(SELECT FIRST 1 GRA_CODIGO FROM GRADES WHERE GRA_PRO = PRO_CODIGO) GRA_CODIGO');
-  Query.Add('FROM PRODUTOS JOIN GRUPOS ON PRO_GRU = GRU_CODIGO JOIN GRUPO_1 ON G1_CODIGO = GRU_G1');
-  Query.Add('AND PRO_CODIGO = :CODIGO');
+  Query.Add('SELECT P.PRO_CODIGO, P.PRO_NOME, P.PRO_CODBARRA, P.PRO_VALORV, P.PRO_GRU,');
+  Query.Add('       COALESCE(P.PRO_VALORC, 0) PRO_VALORC, COALESCE(P.PRO_VALORCM, 0) PRO_VALORCM,');
+  Query.Add('       COALESCE(P.PRO_TIPO, '''') PRO_TIPO, COALESCE(P.PRO_EMBALAGEM, '''') PRO_EMBALAGEM,');
+  Query.Add('       COALESCE(G.GRU_G1, 0) GRU_G1, COALESCE(G1.G1_NOME, '''') G1_NOME,');
+  Query.Add('       (SELECT FIRST 1 GRA_CODIGO FROM GRADES WHERE GRA_PRO = P.PRO_CODIGO) GRA_CODIGO');
+  Query.Add('FROM PRODUTOS P LEFT JOIN GRUPOS G ON P.PRO_GRU = G.GRU_CODIGO LEFT JOIN GRUPO_1 G1 ON G1.G1_CODIGO = G.GRU_G1');
+  Query.Add('WHERE P.PRO_CODIGO = :CODIGO');
   Query.AddParam('CODIGO', Codigo);
   Query.Open;
   if not Query.DataSet.IsEmpty then
@@ -280,6 +316,10 @@ begin
     oJson.AddPair('nome', Query.DataSet.FieldByName('PRO_NOME').AsString);
     oJson.AddPair('codbarra', Query.DataSet.FieldByName('PRO_CODBARRA').AsString);
     oJson.AddPair('valor', TJSONNumber.Create(Query.DataSet.FieldByName('PRO_VALORV').AsCurrency));
+    oJson.AddPair('valorc', TJSONNumber.Create(Query.DataSet.FieldByName('PRO_VALORC').AsFloat));
+    oJson.AddPair('valorcm', TJSONNumber.Create(Query.DataSet.FieldByName('PRO_VALORCM').AsFloat));
+    oJson.AddPair('tipo', TProducaoService.NormalizarTipoProduto(Query.DataSet.FieldByName('PRO_TIPO').AsString));
+    oJson.AddPair('unidade', TProducaoService.NormalizarUnidade(Query.DataSet.FieldByName('PRO_EMBALAGEM').AsString));
     oJson.AddPair('categoria', TJSONNumber.Create(Query.DataSet.FieldByName('PRO_GRU').AsInteger));
     oJson.AddPair('grade', TJSONNumber.Create(Query.DataSet.FieldByName('GRA_CODIGO').AsInteger));
     oJson.AddPair('grupo', TJSONNumber.Create(Query.DataSet.FieldByName('GRU_G1').AsInteger));    
@@ -324,7 +364,7 @@ begin
     // Instancia o objeto sem passar pelo SetCodigo lento
     Nivel := TNivel.Create;
     try
-      // AtribuiÁ„o direta dos campos j· carregados na Query
+      // Atribui√ß√£o direta dos campos j√° carregados na Query
       Nivel.Codigo     := Query.DataSet.FieldByName('NI_CODIGO').AsInteger;
       Nivel.Titulo      := Query.DataSet.FieldByName('NI_TITULO').AsString;
       Nivel.CodProduto  := Query.DataSet.FieldByName('NI_PRO').AsInteger;
@@ -376,9 +416,17 @@ begin
 	// Monta SQL com paginacao usando FIRST e SKIP do Firebird
 	Query.Clear;
 	if Limite > 0 then
-		SQL := Format('SELECT FIRST %d SKIP %d PRO_CODIGO FROM PRODUTOS WHERE PRO_GRU = :GRUPO ORDER BY PRO_CODIGO', [Limite, Pular])
+		SQL := Format(
+      'SELECT FIRST %d SKIP %d PRO_CODIGO FROM PRODUTOS ' +
+      'WHERE PRO_GRU = :GRUPO AND COALESCE(PRO_ESTADO, ''ATIVO'') = ''ATIVO'' ' +
+      '  AND COALESCE(NULLIF(UPPER(TRIM(PRO_TIPO)), ''''), ''REVENDA'') NOT IN (''MP'', ''MATERIA_PRIMA'', ''MATERIA-PRIMA'') ' +
+      'ORDER BY PRO_CODIGO', [Limite, Pular])
 	else
-		SQL := 'SELECT PRO_CODIGO FROM PRODUTOS WHERE PRO_GRU = :GRUPO ORDER BY PRO_CODIGO';
+		SQL :=
+      'SELECT PRO_CODIGO FROM PRODUTOS ' +
+      'WHERE PRO_GRU = :GRUPO AND COALESCE(PRO_ESTADO, ''ATIVO'') = ''ATIVO'' ' +
+      '  AND COALESCE(NULLIF(UPPER(TRIM(PRO_TIPO)), ''''), ''REVENDA'') NOT IN (''MP'', ''MATERIA_PRIMA'', ''MATERIA-PRIMA'') ' +
+      'ORDER BY PRO_CODIGO';
 	
 	Query.Add(SQL);
 	Query.AddParam('GRUPO', CodGrupo);
@@ -423,7 +471,7 @@ initialization
     .Path('produtos')
       .Tag('produtos')
       .GET('Lista Produtos', 'Lista produtos por filtros')
-        .AddResponse(200, 'OperaÁ„o bem sucedida')
+        .AddResponse(200, 'Opera√ß√£o bem sucedida')
           .Schema(TProdutos)
           .IsArray(True)
         .&End
